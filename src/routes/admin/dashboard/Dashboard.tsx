@@ -1,24 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Skeleton } from '../../../components/ui/skeleton';
-import { 
-  Users, 
-  CheckCircle, 
-  Coffee, 
-  Clock, 
-  Plus, 
-  CalendarDays, 
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Skeleton } from "../../../components/ui/skeleton";
+import {
+  Users,
+  CheckCircle,
+  Coffee,
+  Clock,
+  Plus,
+  CalendarDays,
   Settings,
   ArrowRight,
   UserCog,
-  Banknote
-} from 'lucide-react';
-import { getAllEmployees, getAllAdmins, getAttendanceForDate } from '../../../lib/firestore';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { Employee } from '../../../types';
+  Banknote,
+  TrendingDown,
+} from "lucide-react";
+import {
+  getAllEmployees,
+  getAllAdmins,
+  getAttendanceForDate,
+  generateMonthlyReport,
+  getPortalSettings,
+} from "../../../lib/firestore";
+import { getSalaryMonthKey } from "../../../lib/salary";
+import { format, subMonths, isSameMonth, startOfMonth } from "date-fns";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { Employee } from "../../../types";
+import { Select } from "../../../components/ui/select";
 
 interface ActivityItem {
   uid: string;
@@ -41,37 +56,60 @@ export const AdminDashboard: React.FC = () => {
     late: 0,
     admins: 0,
     totalSalary: 0,
+    totalDeductions: 0,
   });
   const [lateArrivals, setLateArrivals] = useState<ActivityItem[]>([]);
   const [onLeave, setOnLeave] = useState<ActivityItem[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    startOfMonth(new Date())
+  );
+
+  // Generate last 12 months for filter
+  const months = Array.from({ length: 12 }, (_, i) =>
+    subMonths(startOfMonth(new Date()), i)
+  );
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [selectedDate]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Get all employees and admins in parallel
-      const [employees, admins] = await Promise.all([
-        getAllEmployees(),
-        getAllAdmins()
-      ]);
-      
+
+      // Get settings for salary month calculation
+      const settings = await getPortalSettings();
+      const salaryStartDay = settings?.salaryStartDay || 6;
+      const salaryMonthKey = getSalaryMonthKey(selectedDate, salaryStartDay);
+      const isCurrentMonth = isSameMonth(selectedDate, new Date());
+
+      // Get all employees, admins, and monthly report in parallel
+      // Also fetch today's records if it's the current month
+      const today = format(new Date(), "yyyy-MM-dd");
+
+      const [employees, admins, monthlyReports, todayRecords] =
+        await Promise.all([
+          getAllEmployees(),
+          getAllAdmins(),
+          generateMonthlyReport(salaryMonthKey),
+          isCurrentMonth ? getAttendanceForDate(today) : Promise.resolve([]),
+        ]);
+
       setTotalEmployees(employees.length);
-      
+
       // Calculate total monthly salary liability
-      const totalSalary = employees.reduce((sum, emp) => sum + (emp.monthlySalary || 0), 0);
+      const totalSalary = employees.reduce(
+        (sum, emp) => sum + (emp.monthlySalary || 0),
+        0
+      );
 
-      // Create a map for quick employee lookup
-      const empMap = new Map<string, Employee>();
-      employees.forEach(emp => empMap.set(emp.uid, emp));
+      // Calculate total deductions for the selected month
+      const totalDeductions = monthlyReports.reduce(
+        (sum, report) => sum + report.totalDeductions,
+        0
+      );
 
-      // Get today's attendance
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const todayRecords = await getAttendanceForDate(today);
-
+      // Always use Monthly Reports for the main stats to ensure consistency
       const newStats = {
         present: 0,
         leave: 0,
@@ -80,52 +118,90 @@ export const AdminDashboard: React.FC = () => {
         late: 0,
         admins: admins.length,
         totalSalary: totalSalary,
+        totalDeductions: totalDeductions,
       };
 
-      const lateList: ActivityItem[] = [];
-      const leaveList: ActivityItem[] = [];
-      const markedEmployees = new Set<string>();
-
-      todayRecords.forEach(record => {
-        markedEmployees.add(record.employeeUid);
-        const emp = empMap.get(record.employeeUid);
-        if (!emp) return;
-
-        if (record.status === 'present') {
-          newStats.present++;
-        } else if (record.status === 'late') {
-          newStats.present++; // Late is also present
-          newStats.late++;
-          lateList.push({
-            uid: emp.uid,
-            name: emp.name,
-            empId: emp.empId,
-            time: record.inTime ? format(record.inTime.toDate(), 'hh:mm a') : '-',
-            status: 'late'
-          });
-        } else if (record.status === 'leave') {
-          newStats.leave++;
-          leaveList.push({
-            uid: emp.uid,
-            name: emp.name,
-            empId: emp.empId,
-            reason: record.leaveReason || 'No reason provided',
-            status: 'leave'
-          });
-        } else if (record.status === 'off') {
-          newStats.off++;
-        }
+      monthlyReports.forEach((report) => {
+        newStats.present += report.presentDays;
+        newStats.late += report.lateCount;
+        newStats.leave += report.leaveDays;
+        newStats.absent += report.unmarkedDays;
       });
 
-      newStats.absent = employees.length - markedEmployees.size;
-      
+      // Prepare lists for the bottom cards
+      const lateList: ActivityItem[] = [];
+      const leaveList: ActivityItem[] = [];
+
+      if (isCurrentMonth) {
+        // For current month, show TODAY's activity
+        const empMap = new Map<string, Employee>();
+        employees.forEach((emp) => empMap.set(emp.uid, emp));
+
+        todayRecords.forEach((record) => {
+          const emp = empMap.get(record.employeeUid);
+          if (!emp) return;
+
+          if (record.status === "late") {
+            lateList.push({
+              uid: emp.uid,
+              name: emp.name,
+              empId: emp.empId,
+              time: record.inTime
+                ? format(record.inTime.toDate(), "hh:mm a")
+                : "-",
+              status: "late",
+            });
+          } else if (record.status === "leave") {
+            leaveList.push({
+              uid: emp.uid,
+              name: emp.name,
+              empId: emp.empId,
+              reason: record.leaveReason || "No reason provided",
+              status: "leave",
+            });
+          }
+        });
+      } else {
+        // For past months, show TOP violators/leaves from the report
+        // Sort by late count
+        const topLate = [...monthlyReports]
+          .sort((a, b) => b.lateCount - a.lateCount)
+          .filter((r) => r.lateCount > 0)
+          .slice(0, 5);
+
+        topLate.forEach((report) => {
+          lateList.push({
+            uid: report.employeeUid,
+            name: report.employeeName,
+            empId: report.empId,
+            time: `${report.lateCount} days`, // Reusing 'time' field for count
+            status: "late",
+          });
+        });
+
+        // Sort by leave days
+        const topLeaves = [...monthlyReports]
+          .sort((a, b) => b.leaveDays - a.leaveDays)
+          .filter((r) => r.leaveDays > 0)
+          .slice(0, 5);
+
+        topLeaves.forEach((report) => {
+          leaveList.push({
+            uid: report.employeeUid,
+            name: report.employeeName,
+            empId: report.empId,
+            reason: `${report.leaveDays} days`, // Reusing 'reason' field for count
+            status: "leave",
+          });
+        });
+      }
+
       setStats(newStats);
       setLateArrivals(lateList);
       setOnLeave(leaveList);
-
     } catch (error) {
-      console.error('Error loading dashboard:', error);
-      toast.error('Failed to load dashboard data');
+      console.error("Error loading dashboard:", error);
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -133,9 +209,9 @@ export const AdminDashboard: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
   };
 
   if (loading) {
@@ -146,7 +222,9 @@ export const AdminDashboard: React.FC = () => {
           <Skeleton className="h-10 w-32" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Skeleton className="h-64" />
@@ -161,17 +239,35 @@ export const AdminDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, Admin</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {getGreeting()}, Admin
+          </h1>
           <p className="text-muted-foreground mt-1">
-            Here's what's happening today, {format(new Date(), 'EEEE, MMMM dd, yyyy')}
+            Here's what's happening today,{" "}
+            {format(new Date(), "EEEE, MMMM dd, yyyy")}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => navigate('/admin/employees')} variant="outline">
+        <div className="flex gap-2 items-center">
+          <Select
+            value={selectedDate.toISOString()}
+            onChange={(e) => setSelectedDate(new Date(e.target.value))}
+            className="w-[180px]"
+          >
+            {months.map((date) => (
+              <option key={date.toISOString()} value={date.toISOString()}>
+                {format(date, "MMMM yyyy")}
+              </option>
+            ))}
+          </Select>
+
+          <Button
+            onClick={() => navigate("/admin/employees")}
+            variant="outline"
+          >
             <Users className="mr-2 h-4 w-4" />
             Employees
           </Button>
-          <Button onClick={() => navigate('/admin/attendance')}>
+          <Button onClick={() => navigate("/admin/attendance")}>
             <CalendarDays className="mr-2 h-4 w-4" />
             Attendance
           </Button>
@@ -182,101 +278,164 @@ export const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Employees
+            </CardTitle>
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
               <Users className="h-4 w-4 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalEmployees}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active workforce</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Active workforce
+            </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Present Today</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Present (Monthly)
+            </CardTitle>
             <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
               <CheckCircle className="h-4 w-4 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.present}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.present}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {totalEmployees > 0 ? Math.round((stats.present / totalEmployees) * 100) : 0}% attendance rate
+              Days present this month
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-orange-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Late Arrivals</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Late (Monthly)
+            </CardTitle>
             <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
               <Clock className="h-4 w-4 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.late}</div>
-            <p className="text-xs text-muted-foreground mt-1">Employees marked late</p>
+            <div className="text-2xl font-bold text-orange-600">
+              {stats.late}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Late arrivals this month
+            </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">On Leave</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Leaves (Monthly)
+            </CardTitle>
             <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
               <Coffee className="h-4 w-4 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.leave}</div>
-            <p className="text-xs text-muted-foreground mt-1">Approved leaves</p>
+            <div className="text-2xl font-bold text-purple-600">
+              {stats.leave}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Approved leaves this month
+            </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-gray-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Unmarked Today</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Absent (Monthly)
+            </CardTitle>
             <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
               <Users className="h-4 w-4 text-gray-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">{stats.absent}</div>
-            <p className="text-xs text-muted-foreground mt-1">Not yet checked in</p>
+            <div className="text-2xl font-bold text-gray-600">
+              {stats.absent}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Unmarked days this month
+            </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-indigo-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Admins</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Admins
+            </CardTitle>
             <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
               <UserCog className="h-4 w-4 text-indigo-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-600">{stats.admins}</div>
-            <p className="text-xs text-muted-foreground mt-1">System administrators</p>
+            <div className="text-2xl font-bold text-indigo-600">
+              {stats.admins}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              System administrators
+            </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-emerald-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Salary Liability</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Salary Liability
+            </CardTitle>
             <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
               <Banknote className="h-4 w-4 text-emerald-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(stats.totalSalary)}
+              {new Intl.NumberFormat("en-IN", {
+                style: "currency",
+                currency: "INR",
+                maximumFractionDigits: 0,
+              }).format(stats.totalSalary)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Total monthly payout</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total monthly payout
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-red-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Deductions
+            </CardTitle>
+            <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {new Intl.NumberFormat("en-IN", {
+                style: "currency",
+                currency: "INR",
+                maximumFractionDigits: 0,
+              }).format(stats.totalDeductions)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Current month deductions
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Activity Section */}
+      {/* Activity Section - Always show */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Late Arrivals List */}
         <Card className="col-span-1">
@@ -285,12 +444,23 @@ export const AdminDashboard: React.FC = () => {
               <div className="space-y-1">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Clock className="h-5 w-5 text-orange-500" />
-                  Late Arrivals
+                  {isSameMonth(selectedDate, new Date())
+                    ? "Late Arrivals (Today)"
+                    : "Most Late (Month)"}
                 </CardTitle>
-                <CardDescription>Employees who arrived late today</CardDescription>
+                <CardDescription>
+                  {isSameMonth(selectedDate, new Date())
+                    ? "Employees who arrived late today"
+                    : "Employees with most late marks"}
+                </CardDescription>
               </div>
               {lateArrivals.length > 0 && (
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/admin/attendance')}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => navigate("/admin/attendance")}
+                >
                   View All <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               )}
@@ -300,19 +470,24 @@ export const AdminDashboard: React.FC = () => {
             {lateArrivals.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                 <CheckCircle className="h-12 w-12 text-green-100 mb-3" />
-                <p>No late arrivals today!</p>
+                <p>No late arrivals found</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {lateArrivals.slice(0, 5).map((item) => (
-                  <div key={item.uid} className="flex items-center justify-between p-3 bg-orange-50/50 rounded-lg border border-orange-100">
+                  <div
+                    key={item.uid}
+                    className="flex items-center justify-between p-3 bg-orange-50/50 rounded-lg border border-orange-100"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-semibold text-xs">
                         {item.name.charAt(0)}
                       </div>
                       <div>
                         <p className="font-medium text-sm">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.empId}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.empId}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -334,12 +509,23 @@ export const AdminDashboard: React.FC = () => {
               <div className="space-y-1">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Coffee className="h-5 w-5 text-purple-500" />
-                  On Leave
+                  {isSameMonth(selectedDate, new Date())
+                    ? "On Leave (Today)"
+                    : "Most Leaves (Month)"}
                 </CardTitle>
-                <CardDescription>Employees on leave today</CardDescription>
+                <CardDescription>
+                  {isSameMonth(selectedDate, new Date())
+                    ? "Employees on leave today"
+                    : "Employees with most leaves"}
+                </CardDescription>
               </div>
               {onLeave.length > 0 && (
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/admin/attendance')}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => navigate("/admin/attendance")}
+                >
                   View All <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               )}
@@ -349,23 +535,31 @@ export const AdminDashboard: React.FC = () => {
             {onLeave.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                 <Users className="h-12 w-12 text-gray-100 mb-3" />
-                <p>No employees on leave today</p>
+                <p>No employees on leave</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {onLeave.slice(0, 5).map((item) => (
-                  <div key={item.uid} className="flex items-center justify-between p-3 bg-purple-50/50 rounded-lg border border-purple-100">
+                  <div
+                    key={item.uid}
+                    className="flex items-center justify-between p-3 bg-purple-50/50 rounded-lg border border-purple-100"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold text-xs">
                         {item.name.charAt(0)}
                       </div>
                       <div>
                         <p className="font-medium text-sm">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.empId}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.empId}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right max-w-[150px]">
-                      <p className="text-xs text-muted-foreground truncate" title={item.reason}>
+                      <p
+                        className="text-xs text-muted-foreground truncate"
+                        title={item.reason}
+                      >
                         {item.reason}
                       </p>
                     </div>
@@ -379,38 +573,53 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/admin/employees')}>
+        <Card
+          className="bg-gradient-to-br from-blue-50 to-white border-blue-100 cursor-pointer hover:shadow-md transition-all"
+          onClick={() => navigate("/admin/employees")}
+        >
           <CardContent className="p-6 flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
               <Plus className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">Add Employee</h3>
-              <p className="text-sm text-muted-foreground">Register new staff member</p>
+              <p className="text-sm text-muted-foreground">
+                Register new staff member
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-white border-green-100 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/admin/attendance')}>
+        <Card
+          className="bg-gradient-to-br from-green-50 to-white border-green-100 cursor-pointer hover:shadow-md transition-all"
+          onClick={() => navigate("/admin/attendance")}
+        >
           <CardContent className="p-6 flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">Mark Attendance</h3>
-              <p className="text-sm text-muted-foreground">Update daily records</p>
+              <p className="text-sm text-muted-foreground">
+                Update daily records
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-gray-50 to-white border-gray-100 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate('/admin/settings')}>
+        <Card
+          className="bg-gradient-to-br from-gray-50 to-white border-gray-100 cursor-pointer hover:shadow-md transition-all"
+          onClick={() => navigate("/admin/settings")}
+        >
           <CardContent className="p-6 flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
               <Settings className="h-6 w-6 text-gray-600" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">System Settings</h3>
-              <p className="text-sm text-muted-foreground">Configure portal options</p>
+              <p className="text-sm text-muted-foreground">
+                Configure portal options
+              </p>
             </div>
           </CardContent>
         </Card>

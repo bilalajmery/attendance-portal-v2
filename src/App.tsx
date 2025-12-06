@@ -1,29 +1,29 @@
-
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { Toaster } from 'sonner';
-import { RequireAuth } from './components/auth/RequireAuth';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "sonner";
+import { RequireAuth } from "./components/auth/RequireAuth";
 
 // Shared
-import { Login } from './routes/shared/Login';
-import { AccessDenied } from './routes/shared/AccessDenied';
+import { Login } from "./routes/shared/Login";
+import { AccessDenied } from "./routes/shared/AccessDenied";
 
 // Employee
-import { EmployeeLayout } from './routes/employee/Layout';
-import { EmployeeDashboard } from './routes/employee/Dashboard';
-import { EmployeeCalendar } from './routes/employee/Calendar';
+import { EmployeeLayout } from "./routes/employee/Layout";
+import { EmployeeDashboard } from "./routes/employee/Dashboard";
+import { EmployeeCalendar } from "./routes/employee/Calendar";
 
 // Admin
-import { AdminLayout } from './routes/admin/Layout';
-import { AdminDashboard } from './routes/admin/dashboard/Dashboard';
-import { EmployeeList } from './routes/admin/employees/EmployeeList';
-import { AdminList } from './routes/admin/admins/AdminList';
-import { AttendanceView } from './routes/admin/attendance/AttendanceView';
-import { CalendarView } from './routes/admin/calendar/CalendarView';
-import { HolidayManagement } from './routes/admin/holidays/HolidayManagement';
-import { SalaryReports } from './routes/admin/reports/SalaryReports';
-import { Settings } from './routes/admin/settings/Settings';
-import { SettingsProvider } from './context/SettingsContext';
+import { AdminLayout } from "./routes/admin/Layout";
+import { AdminDashboard } from "./routes/admin/dashboard/Dashboard";
+import { EmployeeList } from "./routes/admin/employees/EmployeeList";
+import { AdminList } from "./routes/admin/admins/AdminList";
+import { AttendanceView } from "./routes/admin/attendance/AttendanceView";
+import { CalendarView } from "./routes/admin/calendar/CalendarView";
+import { HolidayManagement } from "./routes/admin/holidays/HolidayManagement";
+import { SalaryReports } from "./routes/admin/reports/SalaryReports";
+import { OvertimePage } from "./routes/admin/overtime/Overtime";
+import { Settings } from "./routes/admin/settings/Settings";
+import { SettingsProvider } from "./context/SettingsContext";
 
 function App() {
   return (
@@ -58,7 +58,10 @@ function App() {
                 </RequireAuth>
               }
             >
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route
+                index
+                element={<Navigate to="/admin/dashboard" replace />}
+              />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="employees" element={<EmployeeList />} />
               <Route path="admins" element={<AdminList />} />
@@ -66,6 +69,7 @@ function App() {
               <Route path="calendar" element={<CalendarView />} />
               <Route path="holidays" element={<HolidayManagement />} />
               <Route path="reports" element={<SalaryReports />} />
+              <Route path="overtime" element={<OvertimePage />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 
@@ -73,7 +77,7 @@ function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
-        
+
         <Toaster position="top-right" richColors />
       </SettingsProvider>
     </AuthProvider>

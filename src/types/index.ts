@@ -30,6 +30,9 @@ export interface AttendanceRecord {
   markedBy: string; // 'self' or admin uid
   lateMinutes?: number;
   earlyLeaveHours?: number;
+  overtimeHours?: number;
+  overtimeStatus?: 'approved' | 'rejected';
+  overtimeReason?: string | null;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
 }

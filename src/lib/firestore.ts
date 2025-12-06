@@ -20,7 +20,15 @@ import {
   PortalSettings
 } from '../types';
 import { format, eachDayOfInterval } from 'date-fns';
-import { getSalaryMonthKey, calculateDeductions, calculateNetSalary, isLate, calculateEarlyLeaveHours, getSalaryMonthDates } from './salary';
+import { 
+  getSalaryMonthKey, 
+  calculateDeductions, 
+  calculateNetSalary, 
+  isLate, 
+  calculateEarlyLeaveHours, 
+  getSalaryMonthDates,
+  calculateOvertimeHours 
+} from './salary';
 import { getAllSundaysInYear } from './holidays';
 
 // ==================== ADMIN OPERATIONS ====================
@@ -138,12 +146,25 @@ export const markAttendance = async (
     // Mark early off - update existing record
     const outTime = Timestamp.now();
     const earlyLeaveHours = calculateEarlyLeaveHours(outTime.toDate(), officeEndTime);
+    const overtimeHours = calculateOvertimeHours(outTime.toDate(), officeEndTime);
     
-    await updateDoc(doc(db, recordPath), {
+    const updates: any = {
       outTime,
       earlyLeaveHours,
       updatedAt: serverTimestamp(),
-    });
+    };
+
+    if (overtimeHours > 0) {
+      updates.overtimeHours = overtimeHours;
+      updates.overtimeStatus = 'approved';
+      updates.overtimeReason = null;
+    } else {
+      updates.overtimeHours = 0;
+      updates.overtimeStatus = null;
+      updates.overtimeReason = null;
+    }
+
+    await updateDoc(doc(db, recordPath), updates);
     return;
   }
 
@@ -345,6 +366,18 @@ export const adminUpsertAttendance = async (
   
   if (data.outTime && data.mode === 'attendance') {
     recordData.earlyLeaveHours = earlyLeaveHours;
+    
+    // Calculate Overtime
+    const overtimeHours = calculateOvertimeHours(data.outTime, officeEndTime);
+    if (overtimeHours > 0) {
+      recordData.overtimeHours = overtimeHours;
+      recordData.overtimeStatus = 'approved'; // Default approved
+      recordData.overtimeReason = null;
+    } else {
+      recordData.overtimeHours = 0;
+      recordData.overtimeStatus = null;
+      recordData.overtimeReason = null;
+    }
   }
 
   // Ensure parent date document exists
@@ -517,16 +550,127 @@ export const calculateMonthlySalary = async (
 export const generateMonthlyReport = async (
   salaryMonthKey: string
 ): Promise<SalaryReport[]> => {
+  const settings = await getPortalSettings();
+  const startDay = settings?.salaryStartDay || 6;
+  
+  // 1. Get all employees
   const employees = await getAllEmployees();
   
-  const reports: SalaryReport[] = [];
-  
-  for (const employee of employees) {
-    const report = await calculateMonthlySalary(employee.uid, salaryMonthKey);
-    if (report) {
-      reports.push(report);
-    }
-  }
-  
+  // 2. Get date range
+  const { start, end } = getSalaryMonthDates(salaryMonthKey, startDay);
+  const days = eachDayOfInterval({ start, end });
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+  // 3. Fetch Holidays for the month
+  const holidays = await getMonthHolidays(salaryMonthKey);
+  const holidaysSet = new Set(holidays.map(h => h.date));
+
+  // 4. Fetch Attendance for ALL days in parallel
+  const attendancePromises = days.map(day => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    return getAttendanceForDate(dateStr).then(records => ({ dateStr, records }));
+  });
+
+  const dailyRecords = await Promise.all(attendancePromises);
+
+  // 5. Aggregate data per employee
+  const employeeStats = new Map<string, {
+    presentDays: number;
+    leaveDays: number;
+    offDays: number;
+    lateCount: number;
+    earlyLeaveHours: number;
+    unmarkedDays: number;
+  }>();
+
+  // Initialize stats
+  employees.forEach(emp => {
+    employeeStats.set(emp.uid, {
+      presentDays: 0,
+      leaveDays: 0,
+      offDays: 0,
+      lateCount: 0,
+      earlyLeaveHours: 0,
+      unmarkedDays: 0
+    });
+  });
+
+  // Process each day
+  dailyRecords.forEach(({ dateStr, records }) => {
+    if (dateStr > todayStr) return; // Skip future
+
+    const isHoliday = holidaysSet.has(dateStr);
+    
+    // Create a set of employees who have a record for this day
+    const recordedEmployeeIds = new Set<string>();
+
+    records.forEach(record => {
+      recordedEmployeeIds.add(record.employeeUid);
+      const stats = employeeStats.get(record.employeeUid);
+      if (!stats) return;
+
+      if (record.status === 'present') {
+        stats.presentDays++;
+      } else if (record.status === 'late') {
+        stats.presentDays++;
+        stats.lateCount++;
+      } else if (record.status === 'leave') {
+        stats.leaveDays++;
+      } else if (record.status === 'off') {
+        stats.offDays++;
+      }
+
+      if (record.earlyLeaveHours) {
+        stats.earlyLeaveHours += record.earlyLeaveHours;
+      }
+    });
+
+    // Check for absent/unmarked employees
+    employees.forEach(emp => {
+      if (!recordedEmployeeIds.has(emp.uid)) {
+        // No record
+        if (!isHoliday) {
+          const stats = employeeStats.get(emp.uid);
+          if (stats) stats.unmarkedDays++;
+        }
+      }
+    });
+  });
+
+  // 6. Calculate Final Report
+  const reports: SalaryReport[] = employees.map(emp => {
+    const stats = employeeStats.get(emp.uid)!;
+    
+    // Treat unmarked days as OFF days for deduction
+    const totalOffDaysForDeduction = stats.offDays + stats.unmarkedDays;
+
+    const deductions = calculateDeductions(
+      emp.monthlySalary,
+      totalOffDaysForDeduction,
+      stats.lateCount,
+      stats.earlyLeaveHours
+    );
+
+    const netSalary = calculateNetSalary(emp.monthlySalary, deductions.totalDeductions);
+
+    return {
+      employeeUid: emp.uid,
+      employeeName: emp.name,
+      empId: emp.empId,
+      monthlySalary: emp.monthlySalary,
+      presentDays: stats.presentDays,
+      leaveDays: stats.leaveDays,
+      offDays: stats.offDays,
+      unmarkedDays: stats.unmarkedDays,
+      lateCount: stats.lateCount,
+      earlyLeaveHours: stats.earlyLeaveHours,
+      offDeduction: deductions.offDeduction,
+      lateDeduction: deductions.lateDeduction,
+      earlyLeaveDeduction: deductions.earlyLeaveDeduction,
+      totalDeductions: deductions.totalDeductions,
+      netSalary,
+    };
+  });
+
   return reports;
 };
