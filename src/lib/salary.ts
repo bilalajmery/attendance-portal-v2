@@ -52,9 +52,15 @@ export const calculateEarlyLeaveHours = (outTime: Date, endTime: string = "18:00
   }
   
   const diffMs = officeEndTime.getTime() - outTime.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
+  const diffMinutes = diffMs / (1000 * 60);
   
-  return Math.ceil(diffHours); // Round up to nearest hour
+  // Logic:
+  // < 15 mins -> 0
+  // 15-44 mins -> 0.5
+  // 45-74 mins -> 1.0
+  // Formula: Math.round(minutes / 30) / 2
+  
+  return Math.round(diffMinutes / 30) / 2;
 };
 
 export const calculateOvertimeHours = (outTime: Date, endTime: string = "18:00"): number => {
