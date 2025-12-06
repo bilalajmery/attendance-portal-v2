@@ -11,7 +11,10 @@ import { getSalaryMonthKey, getSalaryMonthDates } from "../../lib/salary";
 import { AttendanceRecord } from '../../types';
 import { toast } from 'sonner';
 
+import { useSettings } from '../../context/SettingsContext';
+
 export const EmployeeCalendar: React.FC = () => {
+  const { salaryStartDay } = useSettings();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -21,14 +24,14 @@ export const EmployeeCalendar: React.FC = () => {
 
   useEffect(() => {
     loadCalendarData();
-  }, [currentMonth, user]);
+  }, [currentMonth, user, salaryStartDay]);
 
   const loadCalendarData = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const salaryMonthKey = getSalaryMonthKey(currentMonth);
+      const salaryMonthKey = getSalaryMonthKey(currentMonth, salaryStartDay);
       
       // Load attendance records
       const monthlyRecords = await getMonthlyAttendance(user.uid, salaryMonthKey);
@@ -39,7 +42,7 @@ export const EmployeeCalendar: React.FC = () => {
       setRecords(recordsMap);
 
       // Load holidays
-      const { start, end } = getSalaryMonthDates(salaryMonthKey);
+      const { start, end } = getSalaryMonthDates(salaryMonthKey, salaryStartDay);
       const allDays = eachDayOfInterval({ start, end });
       const holidaySet = new Set<string>();
       
@@ -93,8 +96,8 @@ export const EmployeeCalendar: React.FC = () => {
     setSelectedDate(record || null);
   };
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
+  const salaryMonthKey = getSalaryMonthKey(currentMonth, salaryStartDay);
+  const { start: monthStart, end: monthEnd } = getSalaryMonthDates(salaryMonthKey, salaryStartDay);
   const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   // Get first day of month to calculate offset

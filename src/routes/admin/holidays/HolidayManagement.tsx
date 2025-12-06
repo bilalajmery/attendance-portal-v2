@@ -5,28 +5,31 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Skeleton } from '../../../components/ui/skeleton';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { addHoliday, getMonthHolidays, deleteHoliday, markAllSundaysForYear } from '../../../lib/firestore';
-import { getSalaryMonthKey } from "../../../lib/salary";
+import { useSettings } from '../../../context/SettingsContext';
+import { getSalaryMonthKey, getSalaryMonthDates } from "../../../lib/salary";
 import { Holiday } from '../../../types';
-import { format } from 'date-fns';
+import { format, addMonths, subMonths, eachDayOfInterval, isSunday } from 'date-fns';
 import { toast } from 'sonner';
 
 export const HolidayManagement: React.FC = () => {
+  const { salaryStartDay } = useSettings();
   const [loading, setLoading] = useState(true);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [reason, setReason] = useState('');
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     loadHolidays();
-  }, []);
+  }, [currentMonth, salaryStartDay]);
 
   const loadHolidays = async () => {
     try {
       setLoading(true);
-      const salaryMonthKey = getSalaryMonthKey();
+      const salaryMonthKey = getSalaryMonthKey(currentMonth, salaryStartDay);
       const data = await getMonthHolidays(salaryMonthKey);
       setHolidays(data.sort((a, b) => a.date.localeCompare(b.date)));
     } catch (error) {
@@ -69,15 +72,51 @@ export const HolidayManagement: React.FC = () => {
     }
   };
 
+  const salaryMonthKey = getSalaryMonthKey(currentMonth, salaryStartDay);
+  const { start: monthStart, end: monthEnd } = getSalaryMonthDates(salaryMonthKey, salaryStartDay);
+
   if (loading) {
     return <Skeleton className="h-96 w-full" />;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Holiday Management</h1>
-        <p className="text-muted-foreground">Mark and manage holidays</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Holiday Management</h1>
+          <p className="text-muted-foreground">Mark and manage holidays</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-4">
+            <span className="font-semibold text-lg">
+              {format(monthStart, 'MMM yyyy')} Salary Month
+            </span>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
+                variant="outline" 
+                size="icon"
+                disabled={loading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button 
+                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
+                variant="outline" 
+                size="icon"
+                disabled={loading}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <span className="text-sm text-muted-foreground">
+            {format(monthStart, 'MMM d')} - {format(monthEnd, 'MMM d, yyyy')}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            (Settings: Start Day {salaryStartDay})
+          </span>
+        </div>
       </div>
 
       <Card>
@@ -117,20 +156,47 @@ export const HolidayManagement: React.FC = () => {
                 variant="outline" 
                 disabled={adding}
                 onClick={async () => {
-                  if (!confirm('Are you sure you want to mark all Sundays in the current year as holidays?')) return;
+                  const yearsToMark = Array.from(new Set([
+                    monthStart.getFullYear(),
+                    monthEnd.getFullYear()
+                  ])).sort();
+                  
+                  const yearsStr = yearsToMark.join(' and ');
+                  
+                  if (!confirm(`Mark all Sundays in ${yearsStr} as holidays? This will also ensure Sundays in the current view are marked.`)) return;
+                  
                   try {
                     setAdding(true);
-                    await markAllSundaysForYear(new Date().getFullYear());
-                    toast.success('All Sundays marked successfully');
+                    
+                    // 1. Explicitly mark Sundays in the current salary month range first
+                    // This ensures the immediate view is correct even if the yearly batch fails or has issues
+                    const currentRangeSundays = eachDayOfInterval({ start: monthStart, end: monthEnd })
+                      .filter(day => isSunday(day))
+                      .map(day => format(day, 'yyyy-MM-dd'));
+
+                    for (const sunday of currentRangeSundays) {
+                      const existing = holidays.find(h => h.date === sunday);
+                      if (!existing) {
+                         await addHoliday(sunday, 'Sunday');
+                      }
+                    }
+
+                    // 2. Then mark for the full years
+                    for (const year of yearsToMark) {
+                      await markAllSundaysForYear(year);
+                    }
+                    
+                    toast.success(`Sundays marked successfully`);
                     await loadHolidays();
                   } catch (error) {
+                    console.error(error);
                     toast.error('Failed to mark Sundays');
                   } finally {
                     setAdding(false);
                   }
                 }}
               >
-                Mark All Sundays
+                Mark Sundays ({Array.from(new Set([monthStart.getFullYear(), monthEnd.getFullYear()])).join('/')})
               </Button>
             </div>
           </form>
@@ -154,7 +220,7 @@ export const HolidayManagement: React.FC = () => {
               {holidays.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-muted-foreground">
-                    No holidays found
+                    No holidays found for this salary month
                   </TableCell>
                 </TableRow>
               ) : (
