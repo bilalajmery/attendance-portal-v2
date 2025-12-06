@@ -65,7 +65,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent onClose={onClose}>
+      <DialogContent className="sm:max-w-[425px] w-full" onClose={onClose}>
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
         </DialogHeader>

@@ -176,8 +176,22 @@ export const EmployeeDashboard: React.FC = () => {
   const canMarkEarlyOff = todayRecord?.status === 'present' || todayRecord?.status === 'late';
   const hasMarkedToday = !!todayRecord;
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, {user?.displayName || 'Employee'}</h1>
+        <p className="text-muted-foreground mt-1">
+          {format(new Date(), 'EEEE, MMMM dd, yyyy')}
+        </p>
+      </div>
+
       {/* Mark Attendance Section */}
       <Card>
         <CardHeader>

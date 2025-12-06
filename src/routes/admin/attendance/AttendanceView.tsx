@@ -238,7 +238,7 @@ export const AttendanceView: React.FC = () => {
       </Card>
 
       <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] w-full">
           <DialogHeader>
             <DialogTitle>Manage Attendance</DialogTitle>
           </DialogHeader>

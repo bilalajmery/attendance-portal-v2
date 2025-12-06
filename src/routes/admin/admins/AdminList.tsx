@@ -127,7 +127,7 @@ export const AdminList: React.FC = () => {
       </Card>
 
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent onClose={() => setShowAddDialog(false)}>
+        <DialogContent className="sm:max-w-[425px] w-full" onClose={() => setShowAddDialog(false)}>
           <DialogHeader>
             <DialogTitle>Add New Admin</DialogTitle>
           </DialogHeader>
