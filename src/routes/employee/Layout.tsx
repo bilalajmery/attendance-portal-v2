@@ -1,9 +1,9 @@
-import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { Button } from '../../components/ui/button';
-import { LogOut, LayoutDashboard, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
+import React from "react";
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { Button } from "../../components/ui/button";
+import { LogOut, LayoutDashboard, Calendar } from "lucide-react";
+import { toast } from "sonner";
 
 export const EmployeeLayout: React.FC = () => {
   const { profile, signOut } = useAuth();
@@ -12,9 +12,9 @@ export const EmployeeLayout: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast.success('Signed out successfully');
+      toast.success("Signed out successfully");
     } catch (error) {
-      toast.error('Failed to sign out');
+      toast.error("Failed to sign out");
     }
   };
 
@@ -23,16 +23,23 @@ export const EmployeeLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-primary">Attendance Portal</h1>
+              <h1 className="text-2xl font-bold text-primary tracking-tight">
+                Attendance Portal
+              </h1>
               <p className="text-sm text-muted-foreground">
-                Welcome, {profile?.name || 'Employee'}
+                Welcome, {profile?.name || "Employee"}
               </p>
             </div>
-            <Button onClick={handleSignOut} variant="outline" size="sm">
+            <Button
+              onClick={handleSignOut}
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </Button>
@@ -41,27 +48,33 @@ export const EmployeeLayout: React.FC = () => {
       </header>
 
       {/* Navigation */}
-      <nav className="bg-white border-b">
+      <nav className="bg-white border-b shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex space-x-1">
             <Link to="/dashboard">
               <Button
-                variant={isActive('/dashboard') ? 'default' : 'ghost'}
-                className="rounded-none border-b-2 border-transparent data-[active=true]:border-primary"
-                data-active={isActive('/dashboard')}
+                variant="ghost"
+                className={`rounded-none border-b-2 px-6 py-6 h-auto text-base font-medium transition-colors ${
+                  isActive("/dashboard")
+                    ? "border-primary text-primary bg-primary/5"
+                    : "border-transparent text-muted-foreground hover:text-primary hover:bg-gray-50"
+                }`}
               >
-                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <LayoutDashboard className="mr-2 h-5 w-5" />
                 Dashboard
               </Button>
             </Link>
             <Link to="/calendar">
               <Button
-                variant={isActive('/calendar') ? 'default' : 'ghost'}
-                className="rounded-none border-b-2 border-transparent data-[active=true]:border-primary"
-                data-active={isActive('/calendar')}
+                variant="ghost"
+                className={`rounded-none border-b-2 px-6 py-6 h-auto text-base font-medium transition-colors ${
+                  isActive("/calendar")
+                    ? "border-primary text-primary bg-primary/5"
+                    : "border-transparent text-muted-foreground hover:text-primary hover:bg-gray-50"
+                }`}
               >
-                <Calendar className="mr-2 h-4 w-4" />
-                Calendar
+                <Calendar className="mr-2 h-5 w-5" />
+                My Calendar
               </Button>
             </Link>
           </div>
@@ -70,7 +83,9 @@ export const EmployeeLayout: React.FC = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Outlet />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
