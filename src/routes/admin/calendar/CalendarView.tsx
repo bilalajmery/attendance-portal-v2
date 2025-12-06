@@ -68,34 +68,21 @@ export const CalendarView: React.FC = () => {
     try {
       setCalendarLoading(true);
       
-      const monthStart = startOfMonth(currentMonth);
-      const monthEnd = endOfMonth(currentMonth);
+      const salaryMonthKey = getSalaryMonthKey(currentMonth, salaryStartDay);
       
-      const startKey = getSalaryMonthKey(monthStart, salaryStartDay);
-      const endKey = getSalaryMonthKey(monthEnd, salaryStartDay);
-      
-      const keysToFetch = new Set([startKey, endKey]);
-      
-      const promises = Array.from(keysToFetch).map(async (key) => {
-        const [recs, hols] = await Promise.all([
-          getMonthlyAttendance(selectedEmployee, key),
-          getMonthHolidays(key)
-        ]);
-        return { recs, hols };
-      });
-
-      const results = await Promise.all(promises);
+      const [recs, hols] = await Promise.all([
+        getMonthlyAttendance(selectedEmployee, salaryMonthKey),
+        getMonthHolidays(salaryMonthKey)
+      ]);
 
       const recordsMap = new Map<string, AttendanceRecord>();
       const holidayMap = new Map<string, Holiday>();
 
-      results.forEach(({ recs, hols }) => {
-        recs.forEach(record => {
-          recordsMap.set(record.date, record);
-        });
-        hols.forEach(holiday => {
-          holidayMap.set(holiday.date, holiday);
-        });
+      recs.forEach(record => {
+        recordsMap.set(record.date, record);
+      });
+      hols.forEach(holiday => {
+        holidayMap.set(holiday.date, holiday);
       });
 
       setRecords(recordsMap);
@@ -109,9 +96,10 @@ export const CalendarView: React.FC = () => {
     }
   };
 
-  const getDayStyle = (dateStr: string, isCurrentMonth: boolean) => {
+  const getDayStyle = (dateStr: string) => {
     const baseStyle = "h-24 w-full p-2 border rounded-lg flex flex-col items-start justify-start transition-all hover:shadow-md relative";
-    const opacity = isCurrentMonth ? "opacity-100" : "opacity-40";
+    // All days in this view are "current" for the salary month
+    const opacity = "opacity-100";
     
     if (holidays.has(dateStr)) {
       return `${baseStyle} ${opacity} bg-yellow-50 border-yellow-200 hover:bg-yellow-100`;
@@ -158,8 +146,9 @@ export const CalendarView: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
+  // Calculate Salary Month Range
+  const salaryMonthKey = getSalaryMonthKey(currentMonth, salaryStartDay);
+  const { start: monthStart, end: monthEnd } = getSalaryMonthDates(salaryMonthKey, salaryStartDay);
   const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const firstDayOfWeek = monthStart.getDay();
 
@@ -171,7 +160,7 @@ export const CalendarView: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Calendar View</h1>
-        <p className="text-muted-foreground">View employee attendance calendar</p>
+        <p className="text-muted-foreground">View employee attendance by Salary Month</p>
       </div>
 
       <Card className="relative">
@@ -192,26 +181,33 @@ export const CalendarView: React.FC = () => {
                 ))}
               </Select>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="font-semibold text-lg">{format(currentMonth, 'MMMM yyyy')}</span>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
-                  variant="outline" 
-                  size="icon"
-                  disabled={calendarLoading}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
-                  variant="outline" 
-                  size="icon"
-                  disabled={calendarLoading}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-lg">
+                  {format(monthStart, 'MMM yyyy')} Salary Month
+                </span>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
+                    variant="outline" 
+                    size="icon"
+                    disabled={calendarLoading}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
+                    variant="outline" 
+                    size="icon"
+                    disabled={calendarLoading}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+              <span className="text-sm text-muted-foreground">
+                {format(monthStart, 'MMM d')} - {format(monthEnd, 'MMM d, yyyy')}
+              </span>
             </div>
           </div>
         </CardHeader>
@@ -265,13 +261,13 @@ export const CalendarView: React.FC = () => {
               const dateStr = format(day, 'yyyy-MM-dd');
               const record = records.get(dateStr);
               const holiday = holidays.get(dateStr);
-              const isCurrent = isSameMonth(day, currentMonth);
+              // const isCurrent = isSameMonth(day, currentMonth); // No longer needed
 
               return (
                 <button
                   key={dateStr}
                   onClick={() => handleDayClick(day)}
-                  className={getDayStyle(dateStr, isCurrent)}
+                  className={getDayStyle(dateStr)}
                   disabled={calendarLoading}
                 >
                   <span className="font-semibold mb-1">{format(day, 'd')}</span>
