@@ -85,6 +85,7 @@ export const SalaryReports: React.FC = () => {
       "Leave",
       "Off",
       "Unmarked",
+      "Holidays",
       "Late",
       "Off Deduction",
       "Late Deduction",
@@ -106,6 +107,7 @@ export const SalaryReports: React.FC = () => {
           r.leaveDays,
           r.offDays,
           r.unmarkedDays,
+          r.holidayDays,
           r.lateCount,
           r.offDeduction,
           r.lateDeduction,
@@ -262,6 +264,7 @@ export const SalaryReports: React.FC = () => {
                   <TableHead className="text-center">Leave</TableHead>
                   <TableHead className="text-center">Off</TableHead>
                   <TableHead className="text-center">Unmarked</TableHead>
+                  <TableHead className="text-center">Holidays</TableHead>
                   <TableHead className="text-center">Late</TableHead>
                   <TableHead className="text-right">Off Deduction</TableHead>
                   <TableHead className="text-right">Late Deduction</TableHead>
@@ -275,7 +278,7 @@ export const SalaryReports: React.FC = () => {
                 {reports.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={12}
+                      colSpan={14}
                       className="text-center text-muted-foreground"
                     >
                       No salary data available for this month
@@ -303,6 +306,9 @@ export const SalaryReports: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-center text-red-500 font-medium">
                         {report.unmarkedDays}
+                      </TableCell>
+                      <TableCell className="text-center text-blue-600 font-medium">
+                        {report.holidayDays}
                       </TableCell>
                       <TableCell className="text-center">
                         {report.lateCount}

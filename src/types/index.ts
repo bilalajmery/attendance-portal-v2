@@ -53,6 +53,7 @@ export interface SalaryReport {
   leaveDays: number;
   offDays: number;
   unmarkedDays: number;
+  holidayDays: number;
   lateCount: number;
   earlyLeaveHours: number;
   offDeduction: number;
