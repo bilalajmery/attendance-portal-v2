@@ -25,29 +25,22 @@ import { addSalaryPayment, getSalaryPayments } from "../../../lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useSettings } from "../../../context/SettingsContext";
 
+import { getSalaryMonthKey } from "../../../lib/salary";
+import { startOfMonth, subMonths, format } from "date-fns";
+
 export const SalaryReports: React.FC = () => {
   const { user } = useAuth();
   const { currencySymbol, salaryStartDay } = useSettings();
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonthNum, setSelectedMonthNum] = useState(
-    new Date().getMonth() + 1
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    startOfMonth(new Date())
   );
   const [reports, setReports] = useState<SalaryReport[]>([]);
   const [paidEmployees, setPaidEmployees] = useState<Set<string>>(new Set());
   const [markingPay, setMarkingPay] = useState(false);
 
-  // Calculate selectedMonth from year and month
-  const selectedMonth = `${selectedYear}_${String(selectedMonthNum).padStart(
-    2,
-    "0"
-  )}`;
-
-  useEffect(() => {
-    const currentDate = new Date();
-    setSelectedYear(currentDate.getFullYear());
-    setSelectedMonthNum(currentDate.getMonth() + 1);
-  }, [salaryStartDay]);
+  // Calculate selectedMonth using the same logic as Dashboard
+  const selectedMonth = getSalaryMonthKey(selectedDate, salaryStartDay);
 
   useEffect(() => {
     loadReports();
@@ -157,28 +150,10 @@ export const SalaryReports: React.FC = () => {
     }
   };
 
-  // Generate year options (last 5 years + current year)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = [];
-  for (let i = 0; i <= 5; i++) {
-    yearOptions.push(currentYear - i);
-  }
-
-  // Month options
-  const monthOptions = [
-    { value: 1, label: "January" },
-    { value: 2, label: "February" },
-    { value: 3, label: "March" },
-    { value: 4, label: "April" },
-    { value: 5, label: "May" },
-    { value: 6, label: "June" },
-    { value: 7, label: "July" },
-    { value: 8, label: "August" },
-    { value: 9, label: "September" },
-    { value: 10, label: "October" },
-    { value: 11, label: "November" },
-    { value: 12, label: "December" },
-  ];
+  // Generate last 12 months for filter (same as Dashboard)
+  const months = Array.from({ length: 12 }, (_, i) =>
+    subMonths(startOfMonth(new Date()), i)
+  );
 
   const totalGrossSalary = reports.reduce((sum, r) => sum + r.monthlySalary, 0);
   const totalDeductions = reports.reduce(
@@ -201,30 +176,17 @@ export const SalaryReports: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Select
-              value={selectedYear.toString()}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="w-32 border rounded-md p-2"
-            >
-              {yearOptions.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={selectedMonthNum.toString()}
-              onChange={(e) => setSelectedMonthNum(Number(e.target.value))}
-              className="w-40 border rounded-md p-2"
-            >
-              {monthOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </Select>
-          </div>
+          <Select
+            value={selectedDate.toISOString()}
+            onChange={(e) => setSelectedDate(new Date(e.target.value))}
+            className="w-[180px] border rounded-md p-2"
+          >
+            {months.map((date) => (
+              <option key={date.toISOString()} value={date.toISOString()}>
+                {format(date, "MMMM yyyy")}
+              </option>
+            ))}
+          </Select>
           <Button onClick={handleExport} variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
