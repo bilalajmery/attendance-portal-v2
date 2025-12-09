@@ -54,6 +54,7 @@ export const AdminLayout: React.FC = () => {
     { path: "/admin/calendar", label: "Calendar", icon: Calendar },
     { path: "/admin/holidays", label: "Holidays", icon: Sun },
     { path: "/admin/reports", label: "Salary Reports", icon: FileText },
+    { path: "/admin/paid-salaries", label: "Paid Salaries", icon: FileText },
     { path: "/admin/overtime", label: "Overtime", icon: Clock },
     { path: "/admin/settings", label: "Settings", icon: Settings },
   ];

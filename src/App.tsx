@@ -23,6 +23,7 @@ import { AttendanceView } from "./routes/admin/attendance/AttendanceView";
 import { CalendarView } from "./routes/admin/calendar/CalendarView";
 import { HolidayManagement } from "./routes/admin/holidays/HolidayManagement";
 import { SalaryReports } from "./routes/admin/reports/SalaryReports";
+import { PaidSalaries } from "./routes/admin/reports/PaidSalaries";
 import { OvertimePage } from "./routes/admin/overtime/Overtime";
 import { Settings } from "./routes/admin/settings/Settings";
 import { SettingsProvider } from "./context/SettingsContext";
@@ -73,6 +74,7 @@ function App() {
               <Route path="calendar" element={<CalendarView />} />
               <Route path="holidays" element={<HolidayManagement />} />
               <Route path="reports" element={<SalaryReports />} />
+              <Route path="paid-salaries" element={<PaidSalaries />} />
               <Route path="overtime" element={<OvertimePage />} />
               <Route path="settings" element={<Settings />} />
             </Route>
