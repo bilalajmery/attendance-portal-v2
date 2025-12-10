@@ -1,39 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Select } from '../../../components/ui/select';
-import { Textarea } from '../../../components/ui/textarea';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { Select } from "../../../components/ui/select";
+import { Textarea } from "../../../components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "../../../components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
-import { Badge } from '../../../components/ui/badge';
-import { Skeleton } from '../../../components/ui/skeleton';
-import { getAllEmployees, getAttendanceForDate, adminUpsertAttendance } from '../../../lib/firestore';
-import { Employee, AttendanceRecord } from '../../../types';
-import { format, parse } from 'date-fns';
-import { toast } from 'sonner';
-import { PlusCircle } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
+import { Badge } from "../../../components/ui/badge";
+import { Skeleton } from "../../../components/ui/skeleton";
+import {
+  getAllEmployees,
+  getAttendanceForDate,
+  adminUpsertAttendance,
+} from "../../../lib/firestore";
+import { Employee, AttendanceRecord } from "../../../types";
+import { format, parse } from "date-fns";
+import { toast } from "sonner";
+import { PlusCircle } from "lucide-react";
 
 export const AttendanceView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDate, setSelectedDate] = useState(
+    format(new Date(), "yyyy-MM-dd")
+  );
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
 
   // Manage Attendance State
   const [isManageOpen, setIsManageOpen] = useState(false);
-  const [manageEmployee, setManageEmployee] = useState('');
-  const [manageDate, setManageDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [manageMode, setManageMode] = useState<'attendance' | 'leave' | 'off'>('attendance');
-  const [manageInTime, setManageInTime] = useState('');
-  const [manageOutTime, setManageOutTime] = useState('');
-  const [manageReason, setManageReason] = useState('');
+  const [manageEmployee, setManageEmployee] = useState("");
+  const [manageDate, setManageDate] = useState(
+    format(new Date(), "yyyy-MM-dd")
+  );
+  const [manageMode, setManageMode] = useState<"attendance" | "leave" | "off">(
+    "attendance"
+  );
+  const [manageInTime, setManageInTime] = useState("");
+  const [manageOutTime, setManageOutTime] = useState("");
+  const [manageReason, setManageReason] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -58,7 +80,7 @@ export const AttendanceView: React.FC = () => {
       const data = await getAllEmployees();
       setEmployees(data);
     } catch (error) {
-      toast.error('Failed to load employees');
+      toast.error("Failed to load employees");
     }
   };
 
@@ -68,7 +90,7 @@ export const AttendanceView: React.FC = () => {
       const data = await getAttendanceForDate(selectedDate);
       setRecords(data);
     } catch (error) {
-      toast.error('Failed to load attendance');
+      toast.error("Failed to load attendance");
     } finally {
       setLoading(false);
     }
@@ -79,47 +101,51 @@ export const AttendanceView: React.FC = () => {
       const records = await getAttendanceForDate(manageDate, manageEmployee);
       if (records.length > 0) {
         const record = records[0];
-        
-        if (record.status === 'leave') {
-          setManageMode('leave');
-        } else if (record.status === 'off') {
-          setManageMode('off');
+
+        if (record.status === "leave") {
+          setManageMode("leave");
+        } else if (record.status === "off") {
+          setManageMode("off");
         } else {
-          setManageMode('attendance');
+          setManageMode("attendance");
         }
 
-        setManageInTime(record.inTime ? format(record.inTime.toDate(), 'HH:mm') : '');
-        setManageOutTime(record.outTime ? format(record.outTime.toDate(), 'HH:mm') : '');
-        setManageReason(record.leaveReason || '');
+        setManageInTime(
+          record.inTime ? format(record.inTime.toDate(), "HH:mm") : ""
+        );
+        setManageOutTime(
+          record.outTime ? format(record.outTime.toDate(), "HH:mm") : ""
+        );
+        setManageReason(record.leaveReason || "");
       } else {
         // Reset if no record
-        setManageMode('attendance');
-        setManageInTime('');
-        setManageOutTime('');
-        setManageReason('');
+        setManageMode("attendance");
+        setManageInTime("");
+        setManageOutTime("");
+        setManageReason("");
       }
     } catch (error) {
-      console.error('Error loading record:', error);
+      console.error("Error loading record:", error);
     }
   };
 
   const handleSaveAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manageEmployee || !manageDate) {
-      toast.error('Please select employee and date');
+      toast.error("Please select employee and date");
       return;
     }
 
     // Validation
-    if (manageMode === 'attendance') {
+    if (manageMode === "attendance") {
       if (!manageInTime) {
-        toast.error('In Time is required for Attendance');
+        toast.error("In Time is required for Attendance");
         return;
       }
 
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const todayStr = format(new Date(), "yyyy-MM-dd");
       if (manageDate < todayStr && !manageOutTime) {
-        toast.error('Out Time is required for past dates');
+        toast.error("Out Time is required for past dates");
         return;
       }
     }
@@ -132,11 +158,19 @@ export const AttendanceView: React.FC = () => {
       let outTimeDate: Date | undefined;
 
       if (manageInTime) {
-        inTimeDate = parse(`${manageDate} ${manageInTime}`, 'yyyy-MM-dd HH:mm', new Date());
+        inTimeDate = parse(
+          `${manageDate} ${manageInTime}`,
+          "yyyy-MM-dd HH:mm",
+          new Date()
+        );
       }
-      
+
       if (manageOutTime) {
-        outTimeDate = parse(`${manageDate} ${manageOutTime}`, 'yyyy-MM-dd HH:mm', new Date());
+        outTimeDate = parse(
+          `${manageDate} ${manageOutTime}`,
+          "yyyy-MM-dd HH:mm",
+          new Date()
+        );
       }
 
       await adminUpsertAttendance(manageEmployee, manageDate, {
@@ -146,32 +180,32 @@ export const AttendanceView: React.FC = () => {
         leaveReason: manageReason || undefined,
       });
 
-      toast.success('Attendance updated successfully');
+      toast.success("Attendance updated successfully");
       setIsManageOpen(false);
       loadAttendance(); // Refresh list
     } catch (error) {
       console.error(error);
-      toast.error('Failed to save attendance');
+      toast.error("Failed to save attendance");
     } finally {
       setSaving(false);
     }
   };
 
   const getEmployeeRecord = (employeeUid: string) => {
-    return records.find(r => r.employeeUid === employeeUid);
+    return records.find((r) => r.employeeUid === employeeUid);
   };
 
   const getStatusBadge = (status?: string) => {
     if (!status) return <Badge variant="outline">Not Marked</Badge>;
-    
+
     const variants: Record<string, any> = {
-      present: { variant: 'success', label: 'Present' },
-      leave: { variant: 'default', label: 'Leave' },
-      off: { variant: 'destructive', label: 'Off' },
-      late: { variant: 'warning', label: 'Late' },
-      holiday: { variant: 'secondary', label: 'Holiday' },
+      present: { variant: "success", label: "Present" },
+      leave: { variant: "default", label: "Leave" },
+      off: { variant: "destructive", label: "Off" },
+      late: { variant: "warning", label: "Late" },
+      holiday: { variant: "secondary", label: "Holiday" },
     };
-    const config = variants[status] || { variant: 'outline', label: status };
+    const config = variants[status] || { variant: "outline", label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -184,7 +218,9 @@ export const AttendanceView: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Attendance View</h1>
-          <p className="text-muted-foreground">View and manage employee attendance</p>
+          <p className="text-muted-foreground">
+            View and manage employee attendance
+          </p>
         </div>
         <Button onClick={() => setIsManageOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -195,7 +231,9 @@ export const AttendanceView: React.FC = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Attendance for {format(new Date(selectedDate), 'MMMM dd, yyyy')}</CardTitle>
+            <CardTitle>
+              Attendance for {format(new Date(selectedDate), "MMMM dd, yyyy")}
+            </CardTitle>
             <input
               type="date"
               value={selectedDate}
@@ -216,22 +254,35 @@ export const AttendanceView: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map(employee => {
-                const record = getEmployeeRecord(employee.uid);
-                return (
-                  <TableRow key={employee.uid}>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
-                    <TableCell>{employee.empId}</TableCell>
-                    <TableCell>{getStatusBadge(record?.status)}</TableCell>
-                    <TableCell>
-                      {record?.inTime ? format(record.inTime.toDate(), 'hh:mm a') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {record?.outTime ? format(record.outTime.toDate(), 'hh:mm a') : '-'}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {employees
+                .filter((employee) => {
+                  if (!employee.createdAt) return true;
+                  const joinDate = employee.createdAt.toDate();
+                  const joinDateStr = format(joinDate, "yyyy-MM-dd");
+                  return selectedDate >= joinDateStr;
+                })
+                .map((employee) => {
+                  const record = getEmployeeRecord(employee.uid);
+                  return (
+                    <TableRow key={employee.uid}>
+                      <TableCell className="font-medium">
+                        {employee.name}
+                      </TableCell>
+                      <TableCell>{employee.empId}</TableCell>
+                      <TableCell>{getStatusBadge(record?.status)}</TableCell>
+                      <TableCell>
+                        {record?.inTime
+                          ? format(record.inTime.toDate(), "hh:mm a")
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {record?.outTime
+                          ? format(record.outTime.toDate(), "hh:mm a")
+                          : "-"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
             </TableBody>
           </Table>
         </CardContent>
@@ -252,8 +303,10 @@ export const AttendanceView: React.FC = () => {
                   className="w-full border rounded-md p-2"
                 >
                   <option value="">Select Employee</option>
-                  {employees.map(emp => (
-                    <option key={emp.uid} value={emp.uid}>{emp.name}</option>
+                  {employees.map((emp) => (
+                    <option key={emp.uid} value={emp.uid}>
+                      {emp.name}
+                    </option>
                   ))}
                 </Select>
               </div>
@@ -272,31 +325,31 @@ export const AttendanceView: React.FC = () => {
             <div className="flex gap-2 p-1 bg-muted rounded-lg">
               <Button
                 type="button"
-                variant={manageMode === 'attendance' ? 'default' : 'ghost'}
+                variant={manageMode === "attendance" ? "default" : "ghost"}
                 className="flex-1"
-                onClick={() => setManageMode('attendance')}
+                onClick={() => setManageMode("attendance")}
               >
                 Present
               </Button>
               <Button
                 type="button"
-                variant={manageMode === 'leave' ? 'default' : 'ghost'}
+                variant={manageMode === "leave" ? "default" : "ghost"}
                 className="flex-1"
-                onClick={() => setManageMode('leave')}
+                onClick={() => setManageMode("leave")}
               >
                 Leave
               </Button>
               <Button
                 type="button"
-                variant={manageMode === 'off' ? 'default' : 'ghost'}
+                variant={manageMode === "off" ? "default" : "ghost"}
                 className="flex-1"
-                onClick={() => setManageMode('off')}
+                onClick={() => setManageMode("off")}
               >
                 Off
               </Button>
             </div>
 
-            {manageMode === 'attendance' && (
+            {manageMode === "attendance" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="inTime">In Time *</Label>
@@ -310,20 +363,21 @@ export const AttendanceView: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="outTime">
-                    Out Time {manageDate < format(new Date(), 'yyyy-MM-dd') ? '*' : ''}
+                    Out Time{" "}
+                    {manageDate < format(new Date(), "yyyy-MM-dd") ? "*" : ""}
                   </Label>
                   <Input
                     id="outTime"
                     type="time"
                     value={manageOutTime}
                     onChange={(e) => setManageOutTime(e.target.value)}
-                    required={manageDate < format(new Date(), 'yyyy-MM-dd')}
+                    required={manageDate < format(new Date(), "yyyy-MM-dd")}
                   />
                 </div>
               </div>
             )}
 
-            {(manageMode === 'leave' || manageMode === 'off') && (
+            {(manageMode === "leave" || manageMode === "off") && (
               <div className="space-y-2">
                 <Label htmlFor="reason">Reason (Optional)</Label>
                 <Textarea
@@ -336,11 +390,15 @@ export const AttendanceView: React.FC = () => {
             )}
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsManageOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsManageOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Attendance'}
+                {saving ? "Saving..." : "Save Attendance"}
               </Button>
             </div>
           </form>
