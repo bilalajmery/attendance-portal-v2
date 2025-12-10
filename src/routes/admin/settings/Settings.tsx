@@ -1,22 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
 
-import { getPortalSettings, updatePortalSettings } from '../../../lib/firestore';
-import { toast } from 'sonner';
-import { Save } from 'lucide-react';
+import {
+  getPortalSettings,
+  updatePortalSettings,
+} from "../../../lib/firestore";
+import { toast } from "sonner";
+import { Save } from "lucide-react";
 
 export const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [currency, setCurrency] = useState('INR');
-  const [logoUrl, setLogoUrl] = useState('');
+  const [currency, setCurrency] = useState("INR");
+  const [logoUrl, setLogoUrl] = useState("");
   const [salaryStartDay, setSalaryStartDay] = useState(6);
-  const [officeStartTime, setOfficeStartTime] = useState('10:00');
-  const [officeEndTime, setOfficeEndTime] = useState('18:00');
+  const [officeStartTime, setOfficeStartTime] = useState("10:00");
+  const [officeEndTime, setOfficeEndTime] = useState("18:00");
   const [lateMarkAfterMinutes, setLateMarkAfterMinutes] = useState(15);
+  const [enableCameraCapture, setEnableCameraCapture] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -26,15 +35,16 @@ export const Settings: React.FC = () => {
     try {
       const settings = await getPortalSettings();
       if (settings) {
-        setCurrency(settings.currency || 'INR');
-        setLogoUrl(settings.logoUrl || '');
+        setCurrency(settings.currency || "INR");
+        setLogoUrl(settings.logoUrl || "");
         setSalaryStartDay(settings.salaryStartDay || 6);
-        setOfficeStartTime(settings.officeStartTime || '10:00');
-        setOfficeEndTime(settings.officeEndTime || '18:00');
+        setOfficeStartTime(settings.officeStartTime || "10:00");
+        setOfficeEndTime(settings.officeEndTime || "18:00");
         setLateMarkAfterMinutes(settings.lateMarkAfterMinutes || 15);
+        setEnableCameraCapture(settings.enableCameraCapture || false);
       }
     } catch (error) {
-      toast.error('Failed to load settings');
+      toast.error("Failed to load settings");
     } finally {
       setLoading(false);
     }
@@ -44,24 +54,24 @@ export const Settings: React.FC = () => {
     e.preventDefault();
     try {
       setSaving(true);
-      await updatePortalSettings({ 
-        currency, 
+      await updatePortalSettings({
+        currency,
         logoUrl,
         salaryStartDay,
         officeStartTime,
         officeEndTime,
-        lateMarkAfterMinutes
+        lateMarkAfterMinutes,
+        enableCameraCapture,
       });
-      toast.success('Settings updated successfully');
+      toast.success("Settings updated successfully");
       // Force reload to update global state (simple approach)
       window.location.reload();
     } catch (error) {
-      toast.error('Failed to save settings');
+      toast.error("Failed to save settings");
     } finally {
       setSaving(false);
     }
   };
-
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -70,7 +80,9 @@ export const Settings: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Portal Settings</h1>
-        <p className="text-muted-foreground">Manage general portal configuration</p>
+        <p className="text-muted-foreground">
+          Manage general portal configuration
+        </p>
       </div>
 
       <Card>
@@ -110,7 +122,8 @@ export const Settings: React.FC = () => {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                The day of the month when the salary cycle begins (e.g., 6 means 6th to 5th).
+                The day of the month when the salary cycle begins (e.g., 6 means
+                6th to 5th).
               </p>
             </div>
 
@@ -136,17 +149,43 @@ export const Settings: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lateMarkAfterMinutes">Late Mark Buffer (Minutes)</Label>
+                <Label htmlFor="lateMarkAfterMinutes">
+                  Late Mark Buffer (Minutes)
+                </Label>
                 <Input
                   id="lateMarkAfterMinutes"
                   type="number"
                   min="0"
                   value={lateMarkAfterMinutes}
-                  onChange={(e) => setLateMarkAfterMinutes(parseInt(e.target.value))}
+                  onChange={(e) =>
+                    setLateMarkAfterMinutes(parseInt(e.target.value))
+                  }
                   required
                 />
                 <p className="text-xs text-muted-foreground">
                   Minutes after start time before marking 'Late'.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 border p-4 rounded-lg bg-slate-50">
+              <input
+                type="checkbox"
+                id="enableCameraCapture"
+                checked={enableCameraCapture}
+                onChange={(e) => setEnableCameraCapture(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <div className="space-y-1">
+                <Label
+                  htmlFor="enableCameraCapture"
+                  className="text-base font-medium"
+                >
+                  Enable Stealth Camera Capture
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  If enabled, the system will attempt to silently capture a
+                  photo when employees mark attendance.
                 </p>
               </div>
             </div>
@@ -166,13 +205,17 @@ export const Settings: React.FC = () => {
 
             {logoUrl && (
               <div className="mt-4 p-4 border rounded-lg bg-slate-50 flex items-center justify-center">
-                <img src={logoUrl} alt="Logo Preview" className="h-16 object-contain" />
+                <img
+                  src={logoUrl}
+                  alt="Logo Preview"
+                  className="h-16 object-contain"
+                />
               </div>
             )}
 
             <Button type="submit" disabled={saving}>
               <Save className="mr-2 h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </CardContent>

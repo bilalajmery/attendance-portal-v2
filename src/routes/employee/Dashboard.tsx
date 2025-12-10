@@ -20,14 +20,6 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import { Skeleton } from "../../components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../../components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -42,8 +34,6 @@ import {
   Wifi,
   WifiOff,
   PartyPopper,
-  Camera,
-  RefreshCw,
 } from "lucide-react";
 import {
   markAttendance,
@@ -93,7 +83,7 @@ const formatTime = (timestamp: any) => {
 };
 
 export const EmployeeDashboard: React.FC = () => {
-  const { currencySymbol, salaryStartDay } = useSettings();
+  const { currencySymbol, salaryStartDay, enableCameraCapture } = useSettings();
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
@@ -107,13 +97,8 @@ export const EmployeeDashboard: React.FC = () => {
   const [checkingNetwork, setCheckingNetwork] = useState(true);
   const [weekHolidays, setWeekHolidays] = useState<Holiday[]>([]);
 
-  // Camera State
-  const [showCamera, setShowCamera] = useState(false);
+  // Camera Refs (Hidden)
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<{
-    type: "present" | "early-off";
-  } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -247,21 +232,30 @@ export const EmployeeDashboard: React.FC = () => {
   };
 
   // Camera Functions
-  const startCamera = async () => {
+  const startCamera = async (): Promise<boolean> => {
     try {
-      setCameraError(null);
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
       });
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Wait for video to be ready
+        await new Promise((resolve) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current?.play();
+              resolve(true);
+            };
+          }
+        });
+        // Small delay to ensure camera adjusts light
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
+      return true;
     } catch (err) {
       console.error("Error accessing camera:", err);
-      setCameraError(
-        "Could not access camera. Please ensure you have granted camera permissions."
-      );
+      return false;
     }
   };
 
@@ -278,47 +272,63 @@ export const EmployeeDashboard: React.FC = () => {
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
 
-      if (context) {
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL("image/jpeg", 0.8);
+        return canvas.toDataURL("image/jpeg", 0.7); // Slightly lower quality for speed
       }
     }
     return null;
   };
 
-  const handleCaptureAndSubmit = async () => {
-    if (!user || !pendingAction) return;
+  // Helper for timeout
+  const timeoutPromise = (ms: number) =>
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timed out")), ms)
+    );
+
+  const captureAndMark = async (type: "present" | "early-off") => {
+    if (!user) return;
+    setMarking(true);
 
     let imageUrl: string | undefined;
-    const imageSrc = captureImage();
 
-    try {
-      setMarking(true);
+    // 1. Attempt Camera Capture if Enabled
+    if (enableCameraCapture) {
+      try {
+        const cameraStarted = await startCamera();
+        if (cameraStarted) {
+          const imageSrc = captureImage();
+          stopCamera(); // Stop immediately after capture
 
-      if (imageSrc) {
-        try {
-          // 1. Upload Image (Attempt)
-          imageUrl = await uploadAttendanceImage(user.uid, imageSrc);
-        } catch (uploadError) {
-          console.error(
-            "Image upload failed, proceeding without image:",
-            uploadError
-          );
-          toast.error("Image upload failed. Marking attendance without photo.");
-          // Proceed without imageUrl
+          if (imageSrc) {
+            try {
+              // Race between upload and timeout (5 seconds)
+              imageUrl = (await Promise.race([
+                uploadAttendanceImage(user.uid, imageSrc),
+                timeoutPromise(5000),
+              ])) as string;
+            } catch (uploadError) {
+              console.error("Image upload failed or timed out:", uploadError);
+              toast.error(
+                "Image upload failed. Marking attendance without photo."
+              );
+              // Fail silently on upload error and proceed
+            }
+          }
         }
-      } else {
-        console.warn("Image capture failed or was skipped.");
-        // Proceed without imageUrl
+      } catch (cameraError) {
+        console.error("Camera capture failed:", cameraError);
+        // Fail silently on camera error
+      } finally {
+        stopCamera(); // Ensure camera is stopped
       }
+    }
 
-      stopCamera(); // Stop camera immediately
-      setShowCamera(false);
-
-      // 2. Mark Attendance
-      if (pendingAction.type === "present") {
+    // 2. Mark Attendance
+    try {
+      if (type === "present") {
         await markAttendance(
           user.uid,
           "present",
@@ -329,10 +339,10 @@ export const EmployeeDashboard: React.FC = () => {
         );
         toast.success(
           imageUrl
-            ? "Attendance marked successfully with photo!"
-            : "Attendance marked successfully (no photo)"
+            ? "Attendance marked successfully!"
+            : "Attendance marked successfully (No Photo)"
         );
-      } else if (pendingAction.type === "early-off") {
+      } else {
         await markAttendance(
           user.uid,
           "present",
@@ -343,44 +353,16 @@ export const EmployeeDashboard: React.FC = () => {
         );
         toast.success(
           imageUrl
-            ? "Out time marked successfully with photo!"
-            : "Out time marked successfully (no photo)"
+            ? "Out time marked successfully!"
+            : "Out time marked successfully (No Photo)"
         );
       }
-
       await loadData();
     } catch (error: any) {
       console.error("Error marking attendance:", error);
       toast.error(error.message || "Failed to mark attendance");
     } finally {
       setMarking(false);
-      setPendingAction(null);
-    }
-  };
-
-  const handleSkipPhoto = async () => {
-    if (!user || !pendingAction) return;
-
-    try {
-      setMarking(true);
-      stopCamera();
-      setShowCamera(false);
-
-      if (pendingAction.type === "present") {
-        await markAttendance(user.uid, "present", "self", undefined, false);
-        toast.success("Attendance marked successfully (skipped photo)");
-      } else if (pendingAction.type === "early-off") {
-        await markAttendance(user.uid, "present", "self", undefined, true);
-        toast.success("Out time marked successfully (skipped photo)");
-      }
-
-      await loadData();
-    } catch (error: any) {
-      console.error("Error marking attendance:", error);
-      toast.error(error.message || "Failed to mark attendance");
-    } finally {
-      setMarking(false);
-      setPendingAction(null);
     }
   };
 
@@ -388,10 +370,7 @@ export const EmployeeDashboard: React.FC = () => {
     if (!user) return;
 
     if (status === "present") {
-      // Open Camera for Present
-      setPendingAction({ type: "present" });
-      setShowCamera(true);
-      startCamera();
+      await captureAndMark("present");
       return;
     }
 
@@ -416,16 +395,7 @@ export const EmployeeDashboard: React.FC = () => {
 
   const handleEarlyOff = async () => {
     if (!user) return;
-    // Open Camera for Early Off / Out Time
-    setPendingAction({ type: "early-off" });
-    setShowCamera(true);
-    startCamera();
-  };
-
-  const handleCloseCamera = () => {
-    stopCamera();
-    setShowCamera(false);
-    setPendingAction(null);
+    await captureAndMark("early-off");
   };
 
   const getStatusBadge = (status: string) => {
@@ -492,82 +462,17 @@ export const EmployeeDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto p-4 pb-20">
-      {/* Camera Dialog */}
-      <Dialog open={showCamera} onOpenChange={handleCloseCamera}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Verify Identity</DialogTitle>
-            <DialogDescription>
-              Please capture a photo to mark your{" "}
-              {pendingAction?.type === "present" ? "attendance" : "out time"}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center space-y-4 py-4">
-            {cameraError ? (
-              <div className="text-center text-red-500 bg-red-50 p-4 rounded-lg">
-                <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-                <p>{cameraError}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={startCamera}
-                  className="mt-2"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" /> Retry Camera
-                </Button>
-              </div>
-            ) : (
-              <div className="relative rounded-lg overflow-hidden bg-black aspect-video w-full flex items-center justify-center">
-                {!stream && (
-                  <div className="absolute inset-0 flex items-center justify-center text-white/50">
-                    <Camera className="h-12 w-12 animate-pulse" />
-                  </div>
-                )}
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  onLoadedMetadata={() => videoRef.current?.play()}
-                />
-                <canvas ref={canvasRef} className="hidden" />
-              </div>
-            )}
-          </div>
-          <DialogFooter className="sm:justify-between gap-2">
-            <Button variant="ghost" onClick={handleCloseCamera}>
-              Cancel
-            </Button>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                onClick={handleSkipPhoto}
-                disabled={marking}
-              >
-                Skip Photo
-              </Button>
-              <Button
-                onClick={handleCaptureAndSubmit}
-                disabled={!stream || marking}
-                className="w-full sm:w-auto"
-              >
-                {marking ? (
-                  <>
-                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-4 w-4 mr-2" />
-                    Capture & Mark
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Hidden Camera Elements */}
+      <div className="hidden">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-64 h-64 object-cover"
+        />
+        <canvas ref={canvasRef} />
+      </div>
 
       {/* Holiday Alert - Current Week */}
       {weekHolidays.length > 0 && (

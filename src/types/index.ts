@@ -79,6 +79,7 @@ export interface PortalSettings {
   officeStartTime?: string; // "HH:mm"
   officeEndTime?: string;   // "HH:mm"
   lateMarkAfterMinutes?: number;
+  enableCameraCapture?: boolean;
   updatedAt?: Timestamp;
 }
 

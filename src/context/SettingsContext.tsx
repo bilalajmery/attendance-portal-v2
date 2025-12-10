@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getPortalSettings } from '../lib/firestore';
-import { PortalSettings } from '../types';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { getPortalSettings } from "../lib/firestore";
+import { PortalSettings } from "../types";
 
 interface SettingsContextType {
   settings: PortalSettings | null;
@@ -11,11 +11,16 @@ interface SettingsContextType {
   officeStartTime: string;
   officeEndTime: string;
   lateMarkAfterMinutes: number;
+  enableCameraCapture: boolean;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined
+);
 
-export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [settings, setSettings] = useState<PortalSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +29,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const data = await getPortalSettings();
       setSettings(data);
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error("Failed to load settings:", error);
     } finally {
       setLoading(false);
     }
@@ -36,32 +41,41 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getCurrencySymbol = (currencyCode: string) => {
     switch (currencyCode) {
-      case 'USD': return '$';
-      case 'EUR': return '€';
-      case 'GBP': return '£';
-      case 'PKR': return 'Rs';
-      case 'AED': return 'AED';
-      default: return '₹'; // Default to INR symbol if not found or if INR
+      case "USD":
+        return "$";
+      case "EUR":
+        return "€";
+      case "GBP":
+        return "£";
+      case "PKR":
+        return "Rs";
+      case "AED":
+        return "AED";
+      default:
+        return "₹"; // Default to INR symbol if not found or if INR
     }
   };
 
-  const currencySymbol = getCurrencySymbol(settings?.currency || 'INR');
+  const currencySymbol = getCurrencySymbol(settings?.currency || "INR");
   const salaryStartDay = settings?.salaryStartDay || 6;
   const officeStartTime = settings?.officeStartTime || "10:00";
   const officeEndTime = settings?.officeEndTime || "18:00";
   const lateMarkAfterMinutes = settings?.lateMarkAfterMinutes || 15;
 
   return (
-    <SettingsContext.Provider value={{ 
-      settings, 
-      loading, 
-      refreshSettings, 
-      currencySymbol, 
-      salaryStartDay,
-      officeStartTime,
-      officeEndTime,
-      lateMarkAfterMinutes
-    }}>
+    <SettingsContext.Provider
+      value={{
+        settings,
+        loading,
+        refreshSettings,
+        currencySymbol,
+        salaryStartDay,
+        officeStartTime,
+        officeEndTime,
+        lateMarkAfterMinutes,
+        enableCameraCapture: settings?.enableCameraCapture || false,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );
@@ -70,7 +84,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const useSettings = () => {
   const context = useContext(SettingsContext);
   if (context === undefined) {
-    throw new Error('useSettings must be used within a SettingsProvider');
+    throw new Error("useSettings must be used within a SettingsProvider");
   }
   return context;
 };
