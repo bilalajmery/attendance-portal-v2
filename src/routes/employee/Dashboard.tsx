@@ -668,12 +668,22 @@ export const EmployeeDashboard: React.FC = () => {
 
                 <div className="text-center space-y-1">
                   <h3 className="text-xl font-semibold text-gray-900">
-                    {todayRecord.outTime
+                    {todayRecord.status === "off"
+                      ? "Today is your Off"
+                      : todayRecord.status === "leave"
+                      ? "On Leave Today"
+                      : todayRecord.outTime
                       ? "You're all done for today!"
                       : "You're checked in!"}
                   </h3>
                   <p className="text-muted-foreground">
-                    {todayRecord.outTime
+                    {todayRecord.status === "off"
+                      ? "Enjoy your day off! Come back tomorrow."
+                      : todayRecord.status === "leave"
+                      ? `Reason: ${
+                          todayRecord.leaveReason || "No reason provided"
+                        }`
+                      : todayRecord.outTime
                       ? `Out time marked at ${formatTime(todayRecord.outTime)}`
                       : `In time marked at ${formatTime(todayRecord.inTime)}`}
                   </p>
