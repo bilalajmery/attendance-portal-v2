@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import { LogOut, LayoutDashboard, Calendar, DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 export const EmployeeLayout: React.FC = () => {
   const { profile, signOut } = useAuth();
@@ -21,34 +22,37 @@ export const EmployeeLayout: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10 shadow-sm transition-colors">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-primary tracking-tight">
+              <h1 className="text-2xl font-bold text-primary dark:text-primary tracking-tight">
                 Attendance Portal
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground dark:text-gray-400">
                 Welcome, {profile?.name || "Employee"}
               </p>
             </div>
-            <Button
-              onClick={handleSignOut}
-              variant="outline"
-              size="sm"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 border-red-100 dark:border-red-900"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Navigation */}
-      <nav className="bg-white border-b shadow-sm">
+      <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm transition-colors">
         <div className="container mx-auto px-4">
           <div className="flex space-x-1">
             <Link to="/dashboard">
@@ -56,8 +60,8 @@ export const EmployeeLayout: React.FC = () => {
                 variant="ghost"
                 className={`rounded-none border-b-2 px-6 py-6 h-auto text-base font-medium transition-colors ${
                   isActive("/dashboard")
-                    ? "border-primary text-primary bg-primary/5"
-                    : "border-transparent text-muted-foreground hover:text-primary hover:bg-gray-50"
+                    ? "border-primary text-primary bg-primary/5 dark:bg-primary/10"
+                    : "border-transparent text-muted-foreground dark:text-gray-400 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700"
                 }`}
               >
                 <LayoutDashboard className="mr-2 h-5 w-5" />
@@ -69,8 +73,8 @@ export const EmployeeLayout: React.FC = () => {
                 variant="ghost"
                 className={`rounded-none border-b-2 px-6 py-6 h-auto text-base font-medium transition-colors ${
                   isActive("/calendar")
-                    ? "border-primary text-primary bg-primary/5"
-                    : "border-transparent text-muted-foreground hover:text-primary hover:bg-gray-50"
+                    ? "border-primary text-primary bg-primary/5 dark:bg-primary/10"
+                    : "border-transparent text-muted-foreground dark:text-gray-400 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700"
                 }`}
               >
                 <Calendar className="mr-2 h-5 w-5" />
@@ -82,8 +86,8 @@ export const EmployeeLayout: React.FC = () => {
                 variant="ghost"
                 className={`rounded-none border-b-2 px-6 py-6 h-auto text-base font-medium transition-colors ${
                   isActive("/salary")
-                    ? "border-primary text-primary bg-primary/5"
-                    : "border-transparent text-muted-foreground hover:text-primary hover:bg-gray-50"
+                    ? "border-primary text-primary bg-primary/5 dark:bg-primary/10"
+                    : "border-transparent text-muted-foreground dark:text-gray-400 hover:text-primary dark:hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700"
                 }`}
               >
                 <DollarSign className="mr-2 h-5 w-5" />

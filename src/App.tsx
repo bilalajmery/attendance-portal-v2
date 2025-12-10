@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "sonner";
 import { RequireAuth } from "./components/auth/RequireAuth";
+import { ThemeProvider } from "./context/ThemeContext";
 
 // Shared
 import { Login } from "./routes/shared/Login";
@@ -30,63 +31,65 @@ import { SettingsProvider } from "./context/SettingsContext";
 
 function App() {
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/access-denied" element={<AccessDenied />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <SettingsProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/access-denied" element={<AccessDenied />} />
 
-            {/* Employee Routes */}
-            <Route
-              path="/"
-              element={
-                <RequireAuth role="employee">
-                  <EmployeeLayout />
-                </RequireAuth>
-              }
-            >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<EmployeeDashboard />} />
-              <Route path="calendar" element={<EmployeeCalendar />} />
-              <Route path="salary" element={<EmployeeSalary />} />
-            </Route>
-
-            {/* Admin Routes */}
-            <Route
-              path="/admin"
-              element={
-                <RequireAuth role="admin">
-                  <AdminLayout />
-                </RequireAuth>
-              }
-            >
+              {/* Employee Routes */}
               <Route
-                index
-                element={<Navigate to="/admin/dashboard" replace />}
-              />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="employees" element={<EmployeeList />} />
-              <Route path="admins" element={<AdminList />} />
-              <Route path="attendance" element={<AttendanceView />} />
-              <Route path="calendar" element={<CalendarView />} />
-              <Route path="holidays" element={<HolidayManagement />} />
-              <Route path="reports" element={<SalaryReports />} />
-              <Route path="paid-salaries" element={<PaidSalaries />} />
-              <Route path="overtime" element={<OvertimePage />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+                path="/"
+                element={
+                  <RequireAuth role="employee">
+                    <EmployeeLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<EmployeeDashboard />} />
+                <Route path="calendar" element={<EmployeeCalendar />} />
+                <Route path="salary" element={<EmployeeSalary />} />
+              </Route>
 
-            {/* Catch all */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </BrowserRouter>
+              {/* Admin Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <RequireAuth role="admin">
+                    <AdminLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route
+                  index
+                  element={<Navigate to="/admin/dashboard" replace />}
+                />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="employees" element={<EmployeeList />} />
+                <Route path="admins" element={<AdminList />} />
+                <Route path="attendance" element={<AttendanceView />} />
+                <Route path="calendar" element={<CalendarView />} />
+                <Route path="holidays" element={<HolidayManagement />} />
+                <Route path="reports" element={<SalaryReports />} />
+                <Route path="paid-salaries" element={<PaidSalaries />} />
+                <Route path="overtime" element={<OvertimePage />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
-        <Toaster position="top-right" richColors />
-      </SettingsProvider>
-    </AuthProvider>
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </BrowserRouter>
+
+          <Toaster position="top-right" richColors />
+        </SettingsProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

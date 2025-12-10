@@ -35,6 +35,7 @@ import {
   calculateOvertimeHours,
 } from "./salary";
 import { getAllSundaysInYear } from "./holidays";
+import { verifyNetworkAccess } from "./ipRestriction";
 
 // ==================== ADMIN OPERATIONS ====================
 
@@ -143,8 +144,15 @@ export const markAttendance = async (
   status: AttendanceStatus,
   markedBy: string,
   leaveReason?: string,
-  isEarlyOff: boolean = false
+  isEarlyOff: boolean = false,
+  imageUrl?: string
 ) => {
+  // Verify network access - only for Present and Early Off marking
+  // Leave and Off can be marked from anywhere
+  if (markedBy === "self" && (status === "present" || isEarlyOff)) {
+    await verifyNetworkAccess();
+  }
+
   const settings = await getPortalSettings();
   const startDay = settings?.salaryStartDay || 6;
   const officeStartTime = settings?.officeStartTime || "10:00";
@@ -190,6 +198,10 @@ export const markAttendance = async (
       updates.overtimeReason = null;
     }
 
+    if (imageUrl) {
+      updates.imageUrl = imageUrl; // Update image if provided (e.g. for out time verification)
+    }
+
     await updateDoc(doc(db, recordPath), updates);
     return;
   }
@@ -210,6 +222,10 @@ export const markAttendance = async (
     markedBy,
     createdAt: serverTimestamp() as Timestamp,
   };
+
+  if (imageUrl) {
+    recordData.imageUrl = imageUrl;
+  }
 
   if (status === "present" || finalStatus === "late") {
     recordData.inTime = inTime;
@@ -682,7 +698,9 @@ export const generateMonthlyReport = async (
 
   // Process each day
   dailyRecords.forEach(({ dateStr, records }) => {
-    if (dateStr > todayStr) return; // Skip future
+    // CRITICAL: Skip future dates for deduction calculation
+    // If we are in the current month, we should NOT count absent/off for future days
+    if (dateStr > todayStr) return; 
 
     const isHoliday = holidaysSet.has(dateStr);
 

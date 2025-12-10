@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getPortalSettings } from "../../lib/firestore";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 export const AdminLayout: React.FC = () => {
   const { profile, signOut } = useAuth();
@@ -69,9 +70,11 @@ export const AdminLayout: React.FC = () => {
             className="h-12 w-auto mb-2 object-contain"
           />
         ) : (
-          <h1 className="text-2xl font-bold text-primary">Admin Portal</h1>
+          <h1 className="text-2xl font-bold text-primary dark:text-primary">
+            Admin Portal
+          </h1>
         )}
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground dark:text-gray-400 mt-1">
           {profile?.name || "Administrator"}
         </p>
       </div>
@@ -99,7 +102,8 @@ export const AdminLayout: React.FC = () => {
         })}
       </nav>
 
-      <div className="p-3 border-t bg-white">
+      <div className="p-3 border-t dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
+        <ThemeToggle />
         <Button onClick={handleSignOut} variant="outline" className="w-full">
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out
@@ -109,21 +113,26 @@ export const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row transition-colors">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-20">
-        <div className="font-bold text-lg text-primary">Admin Portal</div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
-        </Button>
+      <div className="md:hidden bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-20">
+        <div className="font-bold text-lg text-primary dark:text-primary">
+          Admin Portal
+        </div>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -133,14 +142,14 @@ export const AdminLayout: React.FC = () => {
             className="fixed inset-0 bg-black/50"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl">
+          <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-xl">
             <SidebarContent />
           </div>
         </div>
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-64 bg-white border-r min-h-screen sticky top-0 h-screen overflow-y-auto">
+      <aside className="hidden md:block w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 min-h-screen sticky top-0 h-screen overflow-y-auto transition-colors">
         <SidebarContent />
       </aside>
 

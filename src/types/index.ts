@@ -34,6 +34,7 @@ export interface AttendanceRecord {
   overtimeHours?: number;
   overtimeStatus?: 'approved' | 'rejected';
   overtimeReason?: string | null;
+  imageUrl?: string;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
 }
