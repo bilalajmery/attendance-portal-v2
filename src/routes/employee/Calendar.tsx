@@ -89,27 +89,28 @@ export const EmployeeCalendar: React.FC = () => {
 
   const getDayStyle = (dateStr: string) => {
     const baseStyle =
-      "h-24 w-full p-2 border rounded-lg flex flex-col items-start justify-start transition-all hover:shadow-md relative";
+      "h-24 w-full p-2 border dark:border-slate-700 rounded-lg flex flex-col items-start justify-start transition-all hover:shadow-md relative";
     const opacity = "opacity-100";
 
     if (holidays.has(dateStr)) {
-      return `${baseStyle} ${opacity} bg-yellow-50 border-yellow-200 hover:bg-yellow-100`;
+      return `${baseStyle} ${opacity} bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/50`;
     }
 
     const record = records.get(dateStr);
-    if (!record) return `${baseStyle} ${opacity} bg-white hover:bg-gray-50`;
+    if (!record)
+      return `${baseStyle} ${opacity} bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700`;
 
     switch (record.status) {
       case "present":
-        return `${baseStyle} ${opacity} bg-green-50 border-green-200 hover:bg-green-100`;
+        return `${baseStyle} ${opacity} bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/50`;
       case "leave":
-        return `${baseStyle} ${opacity} bg-emerald-50 border-emerald-200 hover:bg-emerald-100`;
+        return `${baseStyle} ${opacity} bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50`;
       case "off":
-        return `${baseStyle} ${opacity} bg-red-50 border-red-200 hover:bg-red-100`;
+        return `${baseStyle} ${opacity} bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50`;
       case "late":
-        return `${baseStyle} ${opacity} bg-orange-50 border-orange-200 hover:bg-orange-100`;
+        return `${baseStyle} ${opacity} bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/50`;
       default:
-        return `${baseStyle} ${opacity} bg-white hover:bg-gray-50`;
+        return `${baseStyle} ${opacity} bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700`;
     }
   };
 
@@ -155,19 +156,21 @@ export const EmployeeCalendar: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto p-4 pb-20">
       <div>
-        <h1 className="text-3xl font-bold">My Calendar</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold dark:text-white">My Calendar</h1>
+        <p className="text-muted-foreground dark:text-slate-400">
           View your attendance by Salary Month
         </p>
       </div>
 
-      <Card className="relative border-none shadow-lg">
+      <Card className="relative border-none shadow-lg dark:bg-slate-800">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Attendance Calendar</CardTitle>
+            <CardTitle className="dark:text-white">
+              Attendance Calendar
+            </CardTitle>
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-4">
-                <span className="font-semibold text-lg">
+                <span className="font-semibold text-lg dark:text-white">
                   {format(monthStart, "MMM yyyy")} Salary Month
                 </span>
                 <div className="flex gap-2">
@@ -189,7 +192,7 @@ export const EmployeeCalendar: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground dark:text-slate-400">
                 {format(monthStart, "MMM d")} -{" "}
                 {format(monthEnd, "MMM d, yyyy")}
               </span>
@@ -199,10 +202,10 @@ export const EmployeeCalendar: React.FC = () => {
         <CardContent>
           {/* Loading Overlay */}
           {calendarLoading && (
-            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+            <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-sm font-medium text-muted-foreground dark:text-slate-300">
                   Loading data...
                 </span>
               </div>
@@ -210,25 +213,25 @@ export const EmployeeCalendar: React.FC = () => {
           )}
 
           {/* Legend */}
-          <div className="mb-6 flex flex-wrap gap-4 text-sm">
+          <div className="mb-6 flex flex-wrap gap-4 text-sm dark:text-slate-300">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-100 border border-green-200 rounded" />
+              <div className="w-4 h-4 bg-green-100 dark:bg-green-900/50 border border-green-200 dark:border-green-800 rounded" />
               <span>Present</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-emerald-100 border border-emerald-200 rounded" />
+              <div className="w-4 h-4 bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 rounded" />
               <span>Leave</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-100 border border-orange-200 rounded" />
+              <div className="w-4 h-4 bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-800 rounded" />
               <span>Late</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-100 border border-red-200 rounded" />
+              <div className="w-4 h-4 bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded" />
               <span>Off</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-100 border border-yellow-200 rounded" />
+              <div className="w-4 h-4 bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-800 rounded" />
               <span>Holiday</span>
             </div>
           </div>
@@ -237,7 +240,7 @@ export const EmployeeCalendar: React.FC = () => {
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div
                 key={day}
-                className="text-center font-semibold text-muted-foreground py-2"
+                className="text-center font-semibold text-muted-foreground dark:text-slate-300 py-2"
               >
                 {day}
               </div>
@@ -259,10 +262,12 @@ export const EmployeeCalendar: React.FC = () => {
                   className={getDayStyle(dateStr)}
                   disabled={calendarLoading}
                 >
-                  <span className="font-semibold mb-1">{format(day, "d")}</span>
+                  <span className="font-semibold mb-1 dark:text-white">
+                    {format(day, "d")}
+                  </span>
 
                   {holiday && (
-                    <span className="text-xs text-yellow-700 font-medium truncate w-full text-left">
+                    <span className="text-xs text-yellow-700 dark:text-yellow-400 font-medium truncate w-full text-left">
                       {holiday.reason || "Holiday"}
                     </span>
                   )}
@@ -288,7 +293,7 @@ export const EmployeeCalendar: React.FC = () => {
                           record.status.slice(1)}
                       </span>
                       {record.inTime && (
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground dark:text-slate-400">
                           In: {format(record.inTime.toDate(), "hh:mm a")}
                         </span>
                       )}
@@ -302,21 +307,23 @@ export const EmployeeCalendar: React.FC = () => {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] w-full">
+        <DialogContent className="sm:max-w-[425px] w-full dark:bg-slate-800 dark:border-slate-700">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 dark:text-white">
               <CalendarIcon className="h-5 w-5" />
               {selectedDateDetails &&
                 format(selectedDateDetails.date, "MMMM dd, yyyy")}
             </DialogTitle>
-            <DialogDescription>Daily attendance details</DialogDescription>
+            <DialogDescription className="dark:text-slate-400">
+              Daily attendance details
+            </DialogDescription>
           </DialogHeader>
 
           {selectedDateDetails && (
             <div className="space-y-4 py-4">
               {/* Status Section */}
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <span className="font-medium">Status</span>
+              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                <span className="font-medium dark:text-white">Status</span>
                 {selectedDateDetails.holiday ? (
                   getStatusBadge("holiday")
                 ) : selectedDateDetails.record ? (
@@ -329,11 +336,11 @@ export const EmployeeCalendar: React.FC = () => {
               {/* Holiday Details */}
               {selectedDateDetails.holiday && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold flex items-center gap-2 text-yellow-600">
+                  <h4 className="font-semibold flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
                     <Info className="h-4 w-4" /> Holiday Information
                   </h4>
-                  <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
-                    <p className="text-sm font-medium text-yellow-900">
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-100 dark:border-yellow-800 rounded-lg">
+                    <p className="text-sm font-medium text-yellow-900 dark:text-yellow-300">
                       Reason:{" "}
                       {selectedDateDetails.holiday.reason || "Public Holiday"}
                     </p>
@@ -348,11 +355,11 @@ export const EmployeeCalendar: React.FC = () => {
                   {(selectedDateDetails.record.status === "present" ||
                     selectedDateDetails.record.status === "late") && (
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-                        <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase font-bold">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-1">
+                        <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400 text-xs uppercase font-bold">
                           <Clock className="h-3 w-3" /> In Time
                         </div>
-                        <div className="font-mono font-medium">
+                        <div className="font-mono font-medium dark:text-white">
                           {selectedDateDetails.record.inTime
                             ? format(
                                 selectedDateDetails.record.inTime.toDate(),
@@ -361,11 +368,11 @@ export const EmployeeCalendar: React.FC = () => {
                             : "--:--"}
                         </div>
                       </div>
-                      <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-                        <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase font-bold">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-1">
+                        <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400 text-xs uppercase font-bold">
                           <Clock className="h-3 w-3" /> Out Time
                         </div>
-                        <div className="font-mono font-medium">
+                        <div className="font-mono font-medium dark:text-white">
                           {selectedDateDetails.record.outTime
                             ? format(
                                 selectedDateDetails.record.outTime.toDate(),
@@ -380,13 +387,13 @@ export const EmployeeCalendar: React.FC = () => {
                   {/* Overtime Details */}
                   {selectedDateDetails.record.overtimeHours &&
                     selectedDateDetails.record.overtimeHours > 0 && (
-                      <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center">
-                        <span className="text-sm font-medium text-blue-900">
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg flex justify-between items-center">
+                        <span className="text-sm font-medium text-blue-900 dark:text-blue-300">
                           Overtime
                         </span>
                         <Badge
                           variant="outline"
-                          className="bg-blue-100 text-blue-800 border-blue-200"
+                          className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700"
                         >
                           {selectedDateDetails.record.overtimeHours} hrs
                         </Badge>
@@ -396,11 +403,11 @@ export const EmployeeCalendar: React.FC = () => {
                   {/* Leave Details */}
                   {selectedDateDetails.record.status === "leave" && (
                     <div className="space-y-2">
-                      <h4 className="font-semibold flex items-center gap-2 text-emerald-600">
+                      <h4 className="font-semibold flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                         <Info className="h-4 w-4" /> Leave Details
                       </h4>
-                      <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
-                        <p className="text-sm font-medium text-emerald-900">
+                      <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-lg">
+                        <p className="text-sm font-medium text-emerald-900 dark:text-emerald-300">
                           Reason:{" "}
                           {selectedDateDetails.record.leaveReason ||
                             "No reason provided"}
@@ -411,8 +418,8 @@ export const EmployeeCalendar: React.FC = () => {
 
                   {/* Off Details */}
                   {selectedDateDetails.record.status === "off" && (
-                    <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
-                      <p className="text-sm font-medium text-red-900">
+                    <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-lg">
+                      <p className="text-sm font-medium text-red-900 dark:text-red-300">
                         Weekly Off / Non-working Day
                       </p>
                     </div>

@@ -15,7 +15,10 @@ export interface Employee {
   name: string;
   email: string;
   empId: string;
+  designation?: string;
   monthlySalary: number; // in INR
+  cnic?: string;
+  address?: string;
   createdBy: string; // admin uid
   createdAt: Timestamp;
   isActive?: boolean;

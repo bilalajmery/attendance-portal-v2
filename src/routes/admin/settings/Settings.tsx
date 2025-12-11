@@ -29,7 +29,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { getDoc, doc, updateDoc, setDoc } from "firebase/firestore";
+import { getDoc, doc, setDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 export const Settings: React.FC = () => {

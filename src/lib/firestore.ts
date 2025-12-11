@@ -72,7 +72,10 @@ export const addEmployee = async (
   name: string,
   empId: string,
   monthlySalary: number,
-  createdBy: string
+  createdBy: string,
+  designation?: string,
+  cnic?: string,
+  address?: string
 ) => {
   const employeeData: Omit<Employee, "uid"> = {
     name,
@@ -82,6 +85,9 @@ export const addEmployee = async (
     createdBy,
     createdAt: serverTimestamp() as Timestamp,
     isActive: true,
+    ...(designation && { designation }),
+    ...(cnic && { cnic }),
+    ...(address && { address }),
   };
 
   await setDoc(doc(db, "employees", uid), employeeData);

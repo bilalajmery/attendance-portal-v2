@@ -161,8 +161,36 @@ export const EmployeeDashboard: React.FC = () => {
         setWeekHolidays([]);
       }
 
-      const sortedRecords = [...(monthlyRecords || [])]
-        .filter((r) => r && r.date)
+      // Merge attendance records with holidays for Recent Activity
+      const recordsMap = new Map<string, AttendanceRecord>();
+      const todayDate = format(new Date(), "yyyy-MM-dd");
+
+      // Add attendance records
+      (monthlyRecords || []).forEach((record) => {
+        if (record && record.date) {
+          recordsMap.set(record.date, record);
+        }
+      });
+
+      // Add holidays as attendance records with status "holiday" (only past holidays)
+      (monthlyHolidays || []).forEach((holiday) => {
+        if (holiday && holiday.date && !recordsMap.has(holiday.date)) {
+          // Only add if holiday date is today or in the past
+          if (holiday.date <= todayDate) {
+            // Create a pseudo attendance record for the holiday
+            recordsMap.set(holiday.date, {
+              date: holiday.date,
+              status: "holiday",
+              employeeUid: user.uid,
+              markedBy: "system",
+              createdAt: new Date() as any,
+            } as AttendanceRecord);
+          }
+        }
+      });
+
+      // Convert map to array, sort by date, and take last 10
+      const sortedRecords = Array.from(recordsMap.values())
         .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
         .slice(0, 10);
       setRecentRecords(sortedRecords);
@@ -401,28 +429,34 @@ export const EmployeeDashboard: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       present: {
-        className: "bg-green-100 text-green-700 hover:bg-green-100/80",
+        className:
+          "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 hover:bg-green-100/80 dark:hover:bg-green-900/70",
         label: "Present",
       },
       leave: {
-        className: "bg-blue-100 text-blue-700 hover:bg-blue-100/80",
+        className:
+          "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 hover:bg-blue-100/80 dark:hover:bg-blue-900/70",
         label: "Leave",
       },
       off: {
-        className: "bg-red-100 text-red-700 hover:bg-red-100/80",
+        className:
+          "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 hover:bg-red-100/80 dark:hover:bg-red-900/70",
         label: "Off",
       },
       late: {
-        className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-100/80",
+        className:
+          "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100/80 dark:hover:bg-yellow-900/70",
         label: "Late",
       },
       holiday: {
-        className: "bg-gray-100 text-gray-700 hover:bg-gray-100/80",
+        className:
+          "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-100/80 dark:hover:bg-purple-900/70",
         label: "Holiday",
       },
     };
     const config = variants[status] || {
-      className: "bg-gray-100 text-gray-700",
+      className:
+        "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400",
       label: status,
     };
     return (
@@ -519,13 +553,13 @@ export const EmployeeDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             {getGreeting()},{" "}
             <span className="text-primary">
               {user?.displayName?.split(" ")[0] || "Employee"}
             </span>
           </h1>
-          <p className="text-muted-foreground mt-1 flex items-center gap-2">
+          <p className="text-muted-foreground dark:text-slate-400 mt-1 flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             {format(new Date(), "EEEE, MMMM dd, yyyy")}
           </p>
@@ -535,30 +569,30 @@ export const EmployeeDashboard: React.FC = () => {
           <div
             className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
               checkingNetwork
-                ? "bg-gray-50 border-gray-200"
+                ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 : isAllowedNetwork
-                ? "bg-green-50 border-green-200"
-                : "bg-red-50 border-red-200"
+                ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+                : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
             }`}
           >
             {checkingNetwork ? (
               <>
-                <div className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
-                <span className="text-xs font-medium text-gray-600">
+                <div className="h-4 w-4 rounded-full border-2 border-gray-400 dark:border-gray-500 border-t-transparent animate-spin" />
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                   Checking...
                 </span>
               </>
             ) : isAllowedNetwork ? (
               <>
-                <Wifi className="h-4 w-4 text-green-600" />
-                <span className="text-xs font-medium text-green-700">
+                <Wifi className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <span className="text-xs font-medium text-green-700 dark:text-green-400">
                   Office WiFi
                 </span>
               </>
             ) : (
               <>
-                <WifiOff className="h-4 w-4 text-red-600" />
-                <span className="text-xs font-medium text-red-700">
+                <WifiOff className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <span className="text-xs font-medium text-red-700 dark:text-red-400">
                   Not Connected
                 </span>
               </>
@@ -566,15 +600,15 @@ export const EmployeeDashboard: React.FC = () => {
           </div>
 
           {/* Salary Display */}
-          <div className="flex items-center gap-2 bg-white p-2 rounded-lg border shadow-sm">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-lg border dark:border-slate-700 shadow-sm">
+            <div className="h-10 w-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-primary dark:text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground font-medium">
+              <p className="text-xs text-muted-foreground dark:text-slate-400 font-medium">
                 Est. Net Salary
               </p>
-              <p className="text-lg font-bold text-primary leading-none">
+              <p className="text-lg font-bold text-primary dark:text-primary leading-none">
                 {currencySymbol}
                 {stats?.estimatedNetSalary?.toLocaleString() || 0}
               </p>
@@ -586,13 +620,13 @@ export const EmployeeDashboard: React.FC = () => {
       {/* Main Action Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Attendance Card */}
-        <Card className="lg:col-span-2 border-none shadow-lg bg-gradient-to-br from-white to-gray-50/50">
+        <Card className="lg:col-span-2 border-none shadow-lg bg-gradient-to-br from-white to-gray-50/50 dark:from-slate-800 dark:to-slate-900">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 dark:text-white">
               <Clock className="h-5 w-5 text-primary" />
               Today's Attendance
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="dark:text-slate-400">
               {hasMarkedToday
                 ? `Status: ${todayRecord.status.toUpperCase()}`
                 : "Mark your attendance for today"}
@@ -605,7 +639,7 @@ export const EmployeeDashboard: React.FC = () => {
                   <Button
                     onClick={() => handleMarkAttendance("present")}
                     disabled={marking || !isAllowedNetwork || checkingNetwork}
-                    className="h-24 flex flex-col gap-2 text-lg hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-24 flex flex-col gap-2 text-lg hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <CheckCircle className="h-8 w-8" />
                     Present
@@ -614,7 +648,7 @@ export const EmployeeDashboard: React.FC = () => {
                     onClick={() => setShowLeaveInput(!showLeaveInput)}
                     disabled={marking}
                     variant="outline"
-                    className="h-24 flex flex-col gap-2 text-lg hover:scale-105 transition-transform border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                    className="h-24 flex flex-col gap-2 text-lg hover:scale-105 transition-transform border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     <Coffee className="h-8 w-8" />
                     Leave
@@ -623,7 +657,7 @@ export const EmployeeDashboard: React.FC = () => {
                     onClick={() => handleMarkAttendance("off")}
                     disabled={marking}
                     variant="destructive"
-                    className="h-24 flex flex-col gap-2 text-lg hover:scale-105 transition-transform shadow-md"
+                    className="h-24 flex flex-col gap-2 text-lg hover:scale-105 transition-transform shadow-md dark:bg-red-700 dark:hover:bg-red-800"
                   >
                     <XCircle className="h-8 w-8" />
                     Off
@@ -631,19 +665,22 @@ export const EmployeeDashboard: React.FC = () => {
                 </div>
 
                 {showLeaveInput && (
-                  <div className="space-y-3 p-4 bg-white rounded-lg border shadow-sm animate-in fade-in slide-in-from-top-2">
-                    <Label htmlFor="leaveReason">Reason for Leave</Label>
+                  <div className="space-y-3 p-4 bg-white dark:bg-slate-900/50 rounded-lg border dark:border-slate-700 shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <Label htmlFor="leaveReason" className="dark:text-white">
+                      Reason for Leave
+                    </Label>
                     <Textarea
                       id="leaveReason"
                       placeholder="Please describe why you are taking leave..."
                       value={leaveReason}
                       onChange={(e) => setLeaveReason(e.target.value)}
-                      className="resize-none"
+                      className="resize-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                     />
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         onClick={() => setShowLeaveInput(false)}
+                        className="dark:hover:bg-slate-800"
                       >
                         Cancel
                       </Button>
@@ -660,14 +697,14 @@ export const EmployeeDashboard: React.FC = () => {
             ) : (
               <div className="flex flex-col items-center justify-center py-6 space-y-6">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-green-100 rounded-full animate-ping opacity-20"></div>
-                  <div className="h-24 w-24 rounded-full bg-green-100 flex items-center justify-center relative z-10">
-                    <CheckCircle className="h-12 w-12 text-green-600" />
+                  <div className="absolute inset-0 bg-green-100 dark:bg-green-900/30 rounded-full animate-ping opacity-20"></div>
+                  <div className="h-24 w-24 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center relative z-10">
+                    <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
 
                 <div className="text-center space-y-1">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {todayRecord.status === "off"
                       ? "Today is your Off"
                       : todayRecord.status === "leave"
@@ -676,7 +713,7 @@ export const EmployeeDashboard: React.FC = () => {
                       ? "You're all done for today!"
                       : "You're checked in!"}
                   </h3>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground dark:text-slate-400">
                     {todayRecord.status === "off"
                       ? "Enjoy your day off! Come back tomorrow."
                       : todayRecord.status === "leave"
@@ -695,7 +732,7 @@ export const EmployeeDashboard: React.FC = () => {
                     disabled={marking || !isAllowedNetwork || checkingNetwork}
                     size="lg"
                     variant="outline"
-                    className="w-full max-w-sm border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:text-orange-800 hover:border-orange-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full max-w-sm border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:text-orange-800 dark:hover:text-orange-300 hover:border-orange-300 dark:hover:border-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Clock className="mr-2 h-5 w-5" />
                     {new Date().getHours() >= 18
@@ -710,55 +747,65 @@ export const EmployeeDashboard: React.FC = () => {
 
         {/* Quick Stats Column */}
         <div className="space-y-6">
-          <Card className="border-none shadow-md bg-white">
+          <Card className="border-none shadow-md bg-white dark:bg-slate-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Monthly Overview</CardTitle>
+              <CardTitle className="text-lg dark:text-white">
+                Monthly Overview
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-100 dark:border-green-800">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-green-200 flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-green-700" />
+                  <div className="h-8 w-8 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-green-700 dark:text-green-400" />
                   </div>
-                  <span className="font-medium text-gray-700">Present</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Present
+                  </span>
                 </div>
-                <span className="text-xl font-bold text-green-700">
+                <span className="text-xl font-bold text-green-700 dark:text-green-400">
                   {stats?.presentDays || 0}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+              <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg border border-yellow-100 dark:border-yellow-800">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-yellow-200 flex items-center justify-center">
-                    <AlertTriangle className="h-4 w-4 text-yellow-700" />
+                  <div className="h-8 w-8 rounded-full bg-yellow-200 dark:bg-yellow-800 flex items-center justify-center">
+                    <AlertTriangle className="h-4 w-4 text-yellow-700 dark:text-yellow-400" />
                   </div>
-                  <span className="font-medium text-gray-700">Late</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Late
+                  </span>
                 </div>
-                <span className="text-xl font-bold text-yellow-700">
+                <span className="text-xl font-bold text-yellow-700 dark:text-yellow-400">
                   {stats?.lateDays || 0}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-blue-200 flex items-center justify-center">
-                    <Coffee className="h-4 w-4 text-blue-700" />
+                  <div className="h-8 w-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
+                    <Coffee className="h-4 w-4 text-blue-700 dark:text-blue-400" />
                   </div>
-                  <span className="font-medium text-gray-700">Leaves</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Leaves
+                  </span>
                 </div>
-                <span className="text-xl font-bold text-blue-700">
+                <span className="text-xl font-bold text-blue-700 dark:text-blue-400">
                   {stats?.leaveDays || 0}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-100">
+              <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg border border-orange-100 dark:border-orange-800">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center">
-                    <Timer className="h-4 w-4 text-orange-700" />
+                  <div className="h-8 w-8 rounded-full bg-orange-200 dark:bg-orange-800 flex items-center justify-center">
+                    <Timer className="h-4 w-4 text-orange-700 dark:text-orange-400" />
                   </div>
-                  <span className="font-medium text-gray-700">Early Leave</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Early Leave
+                  </span>
                 </div>
-                <span className="text-xl font-bold text-orange-700">
+                <span className="text-xl font-bold text-orange-700 dark:text-orange-400">
                   {stats?.earlyLeaveHours || 0}h
                 </span>
               </div>
@@ -768,20 +815,26 @@ export const EmployeeDashboard: React.FC = () => {
       </div>
 
       {/* Recent Activity Table */}
-      <Card className="border-none shadow-md overflow-hidden">
-        <CardHeader className="bg-gray-50/50 border-b">
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Your last 10 attendance records</CardDescription>
+      <Card className="border-none shadow-md overflow-hidden dark:bg-slate-800">
+        <CardHeader className="bg-gray-50/50 dark:bg-slate-900/50 border-b dark:border-slate-700">
+          <CardTitle className="dark:text-white">Recent Activity</CardTitle>
+          <CardDescription className="dark:text-slate-400">
+            Your last 10 attendance records
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[150px]">Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead className="text-right">Hours</TableHead>
+              <TableRow className="hover:bg-transparent dark:hover:bg-transparent dark:border-slate-700">
+                <TableHead className="w-[150px] dark:text-slate-300">
+                  Date
+                </TableHead>
+                <TableHead className="dark:text-slate-300">Status</TableHead>
+                <TableHead className="dark:text-slate-300">Check In</TableHead>
+                <TableHead className="dark:text-slate-300">Check Out</TableHead>
+                <TableHead className="text-right dark:text-slate-300">
+                  Hours
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -789,7 +842,7 @@ export const EmployeeDashboard: React.FC = () => {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="text-center py-8 text-muted-foreground"
+                    className="text-center py-8 text-muted-foreground dark:text-slate-400"
                   >
                     No recent records found
                   </TableCell>
@@ -811,18 +864,21 @@ export const EmployeeDashboard: React.FC = () => {
                   }
 
                   return (
-                    <TableRow key={record.date} className="hover:bg-gray-50/50">
-                      <TableCell className="font-medium">
+                    <TableRow
+                      key={record.date}
+                      className="hover:bg-gray-50/50 dark:hover:bg-slate-900/50 dark:border-slate-700"
+                    >
+                      <TableCell className="font-medium dark:text-white">
                         {format(new Date(record.date), "MMM dd, yyyy")}
                       </TableCell>
                       <TableCell>{getStatusBadge(record.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground dark:text-slate-400">
                         {formatTime(record.inTime)}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground dark:text-slate-400">
                         {formatTime(record.outTime)}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      <TableCell className="text-right font-mono text-xs text-muted-foreground dark:text-slate-400">
                         {duration}
                       </TableCell>
                     </TableRow>

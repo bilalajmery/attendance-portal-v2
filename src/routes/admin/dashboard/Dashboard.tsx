@@ -373,21 +373,21 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[#005e7c] p-8 rounded-3xl text-white shadow-lg relative overflow-hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-[#005e7c] to-[#007a9e] dark:from-slate-800 dark:to-slate-900 p-8 rounded-3xl text-white shadow-lg relative overflow-hidden">
         {/* Decorative Circles */}
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white/10 dark:bg-white/5 rounded-full blur-2xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-white/10 dark:bg-white/5 rounded-full blur-2xl"></div>
 
         <div className="relative z-10">
           <h1 className="text-4xl font-bold tracking-tight">
             {getGreeting()}, {profile?.name || "Admin"}
           </h1>
-          <p className="text-blue-100 mt-2 text-lg">
+          <p className="text-blue-100 dark:text-slate-300 mt-2 text-lg">
             Overview for {format(new Date(), "EEEE, MMMM dd, yyyy")}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center relative z-10 bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/20">
+        <div className="flex flex-col sm:flex-row gap-3 items-center relative z-10 bg-white/10 dark:bg-white/5 p-2 rounded-xl backdrop-blur-sm border border-white/20 dark:border-white/10">
           {filterType === "custom" && (
             <div className="flex gap-2 animate-in fade-in slide-in-from-right-4">
               <input
@@ -396,7 +396,7 @@ export const AdminDashboard: React.FC = () => {
                 onChange={(e) =>
                   setCustomRange((prev) => ({ ...prev, start: e.target.value }))
                 }
-                className="h-10 rounded-lg border-none bg-white/20 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 outline-none"
+                className="h-10 rounded-lg border-none bg-white/20 dark:bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 outline-none"
               />
               <span className="self-center text-white/80">-</span>
               <input
@@ -405,7 +405,7 @@ export const AdminDashboard: React.FC = () => {
                 onChange={(e) =>
                   setCustomRange((prev) => ({ ...prev, end: e.target.value }))
                 }
-                className="h-10 rounded-lg border-none bg-white/20 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 outline-none"
+                className="h-10 rounded-lg border-none bg-white/20 dark:bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 outline-none"
               />
             </div>
           )}
@@ -413,7 +413,7 @@ export const AdminDashboard: React.FC = () => {
           <Select
             value={filterType === "month" ? selectedMonth : filterType}
             onChange={handleFilterChange}
-            className="w-[180px] bg-white/90 text-slate-900 border-none focus:ring-2 focus:ring-white/50"
+            className="w-[180px] bg-white/90 dark:bg-slate-700 text-slate-900 dark:text-white border-none focus:ring-2 focus:ring-white/50"
           >
             <option value="today">Today</option>
             <option value="yesterday">Yesterday</option>
@@ -431,166 +431,166 @@ export const AdminDashboard: React.FC = () => {
       {/* Stats Grid - 3 Column Layout for better spacing */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Row 1: People & Attendance */}
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-blue-50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-blue-50 dark:from-blue-900/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
               Total Employees
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <Users className="h-5 w-5 text-blue-600" />
+            <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-slate-800 mt-2">
+            <div className="text-4xl font-bold text-slate-800 dark:text-white mt-2">
               {totalEmployees}
             </div>
-            <p className="text-sm text-muted-foreground mt-1 font-medium">
+            <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1 font-medium">
               Active workforce
             </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-green-50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-green-50 dark:from-green-900/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
               {labelPrefix} Present {labelSuffix}
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+            <div className="h-10 w-10 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-slate-800 mt-2">
+            <div className="text-4xl font-bold text-slate-800 dark:text-white mt-2">
               {stats.present}
             </div>
-            <p className="text-sm text-green-600 mt-1 font-medium flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+            <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-medium flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500 dark:bg-green-400 inline-block" />
               {filterType === "today" ? "Present today" : "Records found"}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-orange-50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-orange-50 dark:from-orange-900/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
               {labelPrefix} Late {labelSuffix}
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <Clock className="h-5 w-5 text-orange-600" />
+            <div className="h-10 w-10 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-slate-800 mt-2">
+            <div className="text-4xl font-bold text-slate-800 dark:text-white mt-2">
               {stats.late}
             </div>
-            <p className="text-sm text-orange-600 mt-1 font-medium flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" />
+            <p className="text-sm text-orange-600 dark:text-orange-400 mt-1 font-medium flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-orange-500 dark:bg-orange-400 inline-block" />
               Late arrivals
             </p>
           </CardContent>
         </Card>
 
         {/* Row 2: Status & Absences */}
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-purple-50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-purple-50 dark:from-purple-900/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
               {labelPrefix} Leaves {labelSuffix}
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <Coffee className="h-5 w-5 text-purple-600" />
+            <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <Coffee className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-slate-800 mt-2">
+            <div className="text-4xl font-bold text-slate-800 dark:text-white mt-2">
               {stats.leave}
             </div>
-            <p className="text-sm text-muted-foreground mt-1 font-medium">
+            <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1 font-medium">
               Approved leaves
             </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-pink-50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-pink-50 dark:from-pink-900/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
               {labelPrefix} Off {labelSuffix}
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-pink-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <CalendarDays className="h-5 w-5 text-pink-600" />
+            <div className="h-10 w-10 rounded-xl bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <CalendarDays className="h-5 w-5 text-pink-600 dark:text-pink-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-slate-800 mt-2">
+            <div className="text-4xl font-bold text-slate-800 dark:text-white mt-2">
               {stats.off}
             </div>
-            <p className="text-sm text-muted-foreground mt-1 font-medium">
+            <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1 font-medium">
               Off days
             </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-gray-100 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-gray-100 dark:from-gray-800/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-muted-foreground dark:text-slate-400 uppercase tracking-wider">
               {filterType === "today"
                 ? "Today Unmarked"
                 : `Total Unmarked ${labelSuffix}`}
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <Users className="h-5 w-5 text-gray-600" />
+            <div className="h-10 w-10 rounded-xl bg-gray-100 dark:bg-gray-800/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-bold text-slate-800 mt-2">
+            <div className="text-4xl font-bold text-slate-800 dark:text-white mt-2">
               {stats.absent}
             </div>
-            <p className="text-sm text-muted-foreground mt-1 font-medium">
+            <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1 font-medium">
               {filterType === "today" ? "Not marked yet" : "Unmarked days"}
             </p>
           </CardContent>
         </Card>
 
         {/* Row 3: Financials */}
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-emerald-50 to-white hover:shadow-lg transition-all duration-300 group md:col-span-1 lg:col-span-1">
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group md:col-span-1 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-emerald-700 uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
               Salary Liability
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <Banknote className="h-5 w-5 text-emerald-600" />
+            <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <Banknote className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-3xl font-bold text-emerald-700 mt-2">
+            <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400 mt-2">
               {new Intl.NumberFormat("en-IN", {
                 style: "currency",
                 currency: currencyCode,
                 maximumFractionDigits: 0,
               }).format(stats.totalSalary)}
             </div>
-            <p className="text-sm text-emerald-600/80 mt-1 font-medium">
+            <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-1 font-medium">
               Total monthly payout
             </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-red-50 to-white hover:shadow-lg transition-all duration-300 group md:col-span-1 lg:col-span-1">
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-red-50 to-white dark:from-red-900/20 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group md:col-span-1 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-red-700 uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-400 uppercase tracking-wider">
               Total Deductions
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <TrendingDown className="h-5 w-5 text-red-600" />
+            <div className="h-10 w-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-3xl font-bold text-red-700 mt-2">
+            <div className="text-3xl font-bold text-red-700 dark:text-red-400 mt-2">
               {filterType === "month" ? (
                 new Intl.NumberFormat("en-IN", {
                   style: "currency",
@@ -598,10 +598,12 @@ export const AdminDashboard: React.FC = () => {
                   maximumFractionDigits: 0,
                 }).format(stats.totalDeductions)
               ) : (
-                <span className="text-xl text-red-400 font-normal">N/A</span>
+                <span className="text-xl text-red-400 dark:text-red-500 font-normal">
+                  N/A
+                </span>
               )}
             </div>
-            <p className="text-sm text-red-600/80 mt-1 font-medium">
+            <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1 font-medium">
               {filterType === "month"
                 ? "For selected month"
                 : "Monthly view only"}
@@ -609,20 +611,20 @@ export const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-indigo-50 to-white hover:shadow-lg transition-all duration-300 group md:col-span-1 lg:col-span-1">
+        <Card className="relative overflow-hidden border-none shadow-md bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900 hover:shadow-lg transition-all duration-300 group md:col-span-1 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-indigo-700 uppercase tracking-wider">
+            <CardTitle className="text-sm font-medium text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
               Total Admins
             </CardTitle>
-            <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <UserCog className="h-5 w-5 text-indigo-600" />
+            <div className="h-10 w-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <UserCog className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-3xl font-bold text-indigo-700 mt-2">
+            <div className="text-3xl font-bold text-indigo-700 dark:text-indigo-400 mt-2">
               {stats.admins}
             </div>
-            <p className="text-sm text-indigo-600/80 mt-1 font-medium">
+            <p className="text-sm text-indigo-600/80 dark:text-indigo-400/80 mt-1 font-medium">
               System administrators
             </p>
           </CardContent>
@@ -632,17 +634,17 @@ export const AdminDashboard: React.FC = () => {
       {/* Activity Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Late Arrivals List */}
-        <Card className="border-none shadow-lg bg-white/50 backdrop-blur-sm">
-          <CardHeader className="border-b border-gray-100 pb-4">
+        <Card className="border-none shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+          <CardHeader className="border-b border-gray-100 dark:border-slate-700 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-xl flex items-center gap-2 text-slate-800">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Clock className="h-5 w-5 text-orange-600" />
+                <CardTitle className="text-xl flex items-center gap-2 text-slate-800 dark:text-white">
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg">
+                    <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   Late Arrivals
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-slate-400">
                   {filterType === "today"
                     ? "Employees who arrived late today"
                     : "Late records for selected period"}
@@ -652,7 +654,7 @@ export const AdminDashboard: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/30"
                   onClick={() => navigate("/admin/attendance")}
                 >
                   View All <ArrowRight className="ml-1 h-4 w-4" />
@@ -662,10 +664,10 @@ export const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-6">
             {lateArrivals.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                <CheckCircle className="h-12 w-12 text-green-400 mb-3 opacity-50" />
+              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                <CheckCircle className="h-12 w-12 text-green-400 dark:text-green-500 mb-3 opacity-50" />
                 <p className="font-medium">No late arrivals found</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground dark:text-slate-500">
                   Everyone is on time!
                 </p>
               </div>
@@ -674,23 +676,23 @@ export const AdminDashboard: React.FC = () => {
                 {lateArrivals.slice(0, 5).map((item, idx) => (
                   <div
                     key={`${item.uid}-${idx}`}
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold text-sm shadow-inner">
+                      <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-700 dark:text-orange-400 font-bold text-sm shadow-inner">
                         {item.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-800 group-hover:text-orange-700 transition-colors">
+                        <p className="font-semibold text-slate-800 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors">
                           {item.name}
                         </p>
-                        <p className="text-xs text-muted-foreground font-mono">
+                        <p className="text-xs text-muted-foreground dark:text-slate-400 font-mono">
                           {item.empId}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-100 dark:border-orange-800">
                         {item.time}
                       </span>
                     </div>
@@ -702,17 +704,17 @@ export const AdminDashboard: React.FC = () => {
         </Card>
 
         {/* On Leave List */}
-        <Card className="border-none shadow-lg bg-white/50 backdrop-blur-sm">
-          <CardHeader className="border-b border-gray-100 pb-4">
+        <Card className="border-none shadow-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+          <CardHeader className="border-b border-gray-100 dark:border-slate-700 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-xl flex items-center gap-2 text-slate-800">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Coffee className="h-5 w-5 text-purple-600" />
+                <CardTitle className="text-xl flex items-center gap-2 text-slate-800 dark:text-white">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                    <Coffee className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   On Leave
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-slate-400">
                   {filterType === "today"
                     ? "Employees on leave today"
                     : "Leave records for selected period"}
@@ -722,7 +724,7 @@ export const AdminDashboard: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30"
                   onClick={() => navigate("/admin/attendance")}
                 >
                   View All <ArrowRight className="ml-1 h-4 w-4" />
@@ -732,10 +734,10 @@ export const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-6">
             {onLeave.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                <Users className="h-12 w-12 text-slate-300 mb-3 opacity-50" />
+              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                <Users className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-3 opacity-50" />
                 <p className="font-medium">No employees on leave</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground dark:text-slate-500">
                   Full attendance today!
                 </p>
               </div>
@@ -744,24 +746,24 @@ export const AdminDashboard: React.FC = () => {
                 {onLeave.slice(0, 5).map((item, idx) => (
                   <div
                     key={`${item.uid}-${idx}`}
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm shadow-inner">
+                      <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-700 dark:text-purple-400 font-bold text-sm shadow-inner">
                         {item.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-800 group-hover:text-purple-700 transition-colors">
+                        <p className="font-semibold text-slate-800 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
                           {item.name}
                         </p>
-                        <p className="text-xs text-muted-foreground font-mono">
+                        <p className="text-xs text-muted-foreground dark:text-slate-400 font-mono">
                           {item.empId}
                         </p>
                       </div>
                     </div>
                     <div className="text-right max-w-[150px]">
                       <p
-                        className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-md truncate"
+                        className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-md truncate"
                         title={item.reason}
                       >
                         {item.reason}
@@ -778,65 +780,65 @@ export const AdminDashboard: React.FC = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card
-          className="group bg-white border-none shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative"
+          className="group bg-white dark:bg-slate-800 border-none shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative"
           onClick={() => navigate("/admin/employees")}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 dark:from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardContent className="p-8 flex items-center gap-6 relative z-10">
-            <div className="h-14 w-14 rounded-2xl bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-              <Plus className="h-7 w-7 text-blue-600" />
+            <div className="h-14 w-14 rounded-2xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+              <Plus className="h-7 w-7 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="font-bold text-xl text-slate-800 group-hover:text-blue-700 transition-colors">
+              <h3 className="font-bold text-xl text-slate-800 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                 Add Employee
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
                 Register new staff member
               </p>
             </div>
-            <ArrowRight className="ml-auto h-5 w-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="ml-auto h-5 w-5 text-slate-300 dark:text-slate-600 group-hover:text-blue-500 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
           </CardContent>
         </Card>
 
         <Card
-          className="group bg-white border-none shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative"
+          className="group bg-white dark:bg-slate-800 border-none shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative"
           onClick={() => navigate("/admin/reports")}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 dark:from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardContent className="p-8 flex items-center gap-6 relative z-10">
-            <div className="h-14 w-14 rounded-2xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-              <Banknote className="h-7 w-7 text-emerald-600" />
+            <div className="h-14 w-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+              <Banknote className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h3 className="font-bold text-xl text-slate-800 group-hover:text-emerald-700 transition-colors">
+              <h3 className="font-bold text-xl text-slate-800 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
                 Salary Reports
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
                 View monthly payroll
               </p>
             </div>
-            <ArrowRight className="ml-auto h-5 w-5 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="ml-auto h-5 w-5 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
           </CardContent>
         </Card>
 
         <Card
-          className="group bg-white border-none shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative"
+          className="group bg-white dark:bg-slate-800 border-none shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative"
           onClick={() => navigate("/admin/settings")}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-500/10 dark:from-gray-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardContent className="p-8 flex items-center gap-6 relative z-10">
-            <div className="h-14 w-14 rounded-2xl bg-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-              <Settings className="h-7 w-7 text-gray-600" />
+            <div className="h-14 w-14 rounded-2xl bg-gray-100 dark:bg-gray-800/50 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+              <Settings className="h-7 w-7 text-gray-600 dark:text-gray-400" />
             </div>
             <div>
-              <h3 className="font-bold text-xl text-slate-800 group-hover:text-gray-700 transition-colors">
+              <h3 className="font-bold text-xl text-slate-800 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
                 System Settings
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
                 Configure portal options
               </p>
             </div>
-            <ArrowRight className="ml-auto h-5 w-5 text-slate-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all" />
+            <ArrowRight className="ml-auto h-5 w-5 text-slate-300 dark:text-slate-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 group-hover:translate-x-1 transition-all" />
           </CardContent>
         </Card>
       </div>
