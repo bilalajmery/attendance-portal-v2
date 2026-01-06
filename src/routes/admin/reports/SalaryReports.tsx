@@ -20,13 +20,34 @@ import { SalaryReport } from "../../../types";
 import { toast } from "sonner";
 import { useAuth } from "../../../context/AuthContext";
 import { Button } from "../../../components/ui/button";
-import { Download, CheckCircle, DollarSign } from "lucide-react";
-import { addSalaryPayment, getSalaryPayments } from "../../../lib/firestore";
+import {
+  addSalaryPayment,
+  getSalaryPayments,
+  getMonthlyAttendance,
+  getMonthHolidays,
+} from "../../../lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useSettings } from "../../../context/SettingsContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../../../components/ui/dialog";
+import {
+  Eye,
+  Clock,
+  AlertTriangle,
+  Download,
+  CheckCircle,
+  DollarSign,
+  Loader2,
+} from "lucide-react";
 
-import { getSalaryMonthKey } from "../../../lib/salary";
-import { startOfMonth, subMonths, format } from "date-fns";
+import { getSalaryMonthKey, getSalaryMonthDates } from "../../../lib/salary";
+import { startOfMonth, subMonths, format, eachDayOfInterval } from "date-fns";
+import { AttendanceRecord, Holiday } from "../../../types";
 
 export const SalaryReports: React.FC = () => {
   const { user } = useAuth();
@@ -38,6 +59,13 @@ export const SalaryReports: React.FC = () => {
   const [reports, setReports] = useState<SalaryReport[]>([]);
   const [paidEmployees, setPaidEmployees] = useState<Set<string>>(new Set());
   const [markingPay, setMarkingPay] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<SalaryReport | null>(null);
+  const [attendanceBreakdown, setAttendanceBreakdown] = useState<{
+    records: Map<string, AttendanceRecord>;
+    holidays: Map<string, Holiday>;
+  } | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Calculate selectedMonth using the same logic as Dashboard
   const selectedMonth = getSalaryMonthKey(selectedDate, salaryStartDay);
@@ -151,6 +179,31 @@ export const SalaryReports: React.FC = () => {
       toast.error("Failed to mark as paid");
     } finally {
       setMarkingPay(false);
+    }
+  };
+
+  const handleViewDetails = async (report: SalaryReport) => {
+    setSelectedReport(report);
+    setIsDetailsOpen(true);
+    setLoadingDetails(true);
+    try {
+      const [recs, hols] = await Promise.all([
+        getMonthlyAttendance(report.employeeUid, selectedMonth),
+        getMonthHolidays(selectedMonth),
+      ]);
+
+      const recordsMap = new Map<string, AttendanceRecord>();
+      const holidayMap = new Map<string, Holiday>();
+
+      recs.forEach(r => recordsMap.set(r.date, r));
+      hols.forEach(h => holidayMap.set(h.date, h));
+
+      setAttendanceBreakdown({ records: recordsMap, holidays: holidayMap });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load details");
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -270,13 +323,14 @@ export const SalaryReports: React.FC = () => {
                   <TableHead className="text-right">Total Deductions</TableHead>
                   <TableHead className="text-right">Net Salary</TableHead>
                   <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reports.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={17}
+                      colSpan={18}
                       className="text-center text-muted-foreground"
                     >
                       No salary data available for this month
@@ -356,6 +410,16 @@ export const SalaryReports: React.FC = () => {
                           </Button>
                         )}
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleViewDetails(report)}
+                          title="View Attendance Records"
+                        >
+                          <Eye className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -364,6 +428,170 @@ export const SalaryReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Detailed Attendance Modal */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Attendance Breakdown - {selectedReport?.employeeName}
+            </DialogTitle>
+            <DialogDescription>
+              Detailed records for {format(selectedDate, "MMMM yyyy")} (
+              {selectedMonth})
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingDetails ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : attendanceBreakdown && selectedReport ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase">
+                    Basic Salary
+                  </p>
+                  <p className="text-lg font-bold">
+                    {currencySymbol}
+                    {selectedReport?.monthlySalary.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-bold uppercase">
+                    Total Deduction
+                  </p>
+                  <p className="text-lg font-bold">
+                    -{currencySymbol}
+                    {selectedReport?.totalDeductions.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                  <p className="text-xs text-green-600 dark:text-green-400 font-bold uppercase">
+                    Net Payable
+                  </p>
+                  <p className="text-lg font-bold">
+                    {currencySymbol}
+                    {selectedReport?.netSalary.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-900/20 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 font-bold uppercase">
+                    Per Day Deduction
+                  </p>
+                  <p className="text-lg font-bold">
+                    {currencySymbol}
+                    {Math.round(
+                      ((selectedReport?.monthlySalary || 0) / 30) * 100
+                    ) / 100}
+                  </p>
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Remarks / Deductions</TableHead>
+                    <TableHead className="text-center">In Time</TableHead>
+                    <TableHead className="text-center">Out Time</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const { start, end } = getSalaryMonthDates(
+                      selectedMonth,
+                      salaryStartDay
+                    );
+                    const days = eachDayOfInterval({ start, end });
+                    let lateCounter = 0;
+
+                    return days.map((day) => {
+                      const dateStr = format(day, "yyyy-MM-dd");
+                      const record = attendanceBreakdown?.records.get(dateStr);
+                      const holiday = attendanceBreakdown?.holidays.get(dateStr);
+                      const isWeekend = day.getDay() === 0; // Assuming Sunday is Off
+
+                      let status =
+                        record?.status ||
+                        (holiday ? "holiday" : isWeekend ? "off" : "unmarked");
+                      let deductionInfo = "";
+                      let statusColor = "text-slate-500";
+
+                      if (status === "half-day") {
+                        deductionInfo = "Half Day Deduction (0.5 day)";
+                        statusColor = "text-orange-600 font-bold";
+                      } else if (status === "late") {
+                        lateCounter++;
+                        const trigger = lateCounter % 3 === 0;
+                        deductionInfo = `Late #${lateCounter}${trigger ? " (3rd Late: 0.5 day Ded.)" : ""
+                          }`;
+                        statusColor = "text-yellow-600 font-bold";
+                      } else if (status === "off" || status === "unmarked") {
+                        deductionInfo = "1.2x Per Day Deduction";
+                        statusColor = "text-red-600 font-bold";
+                        status =
+                          status === "unmarked" ? "Absent/Unmarked" : "Weekly Off";
+                      } else if (status === "leave") {
+                        statusColor = "text-indigo-600 font-bold";
+                      } else if (status === "holiday") {
+                        statusColor = "text-blue-600 font-bold";
+                        deductionInfo = holiday?.reason || "Public Holiday";
+                      } else {
+                        statusColor = "text-green-600 font-bold";
+                      }
+
+                      return (
+                        <TableRow
+                          key={dateStr}
+                          className={
+                            record?.status === "off" ||
+                              status === "Absent/Unmarked"
+                              ? "bg-red-50/30"
+                              : ""
+                          }
+                        >
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {format(day, "dd MMM (EEE)")}
+                          </TableCell>
+                          <TableCell className={statusColor}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {deductionInfo && (
+                              <div className="flex items-center gap-1">
+                                {(status === "half-day" ||
+                                  status === "Absent/Unmarked" ||
+                                  (status === "late" &&
+                                    lateCounter % 3 === 0)) && (
+                                    <AlertTriangle className="h-3 w-3 text-red-500" />
+                                  )}
+                                {deductionInfo}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-xs">
+                            {record?.inTime
+                              ? format(record.inTime.toDate(), "hh:mm a")
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-xs">
+                            {record?.outTime
+                              ? format(record.outTime.toDate(), "hh:mm a")
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    });
+                  })()}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
