@@ -261,7 +261,7 @@ export const SalaryReports: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currencySymbol}
+              {currencySymbol} &nbsp;
               {totalGrossSalary.toLocaleString()}
             </div>
           </CardContent>
@@ -275,7 +275,7 @@ export const SalaryReports: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {currencySymbol}
+              {currencySymbol} &nbsp;
               {totalDeductions.toLocaleString()}
             </div>
           </CardContent>
@@ -289,7 +289,7 @@ export const SalaryReports: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {currencySymbol}
+              {currencySymbol} &nbsp;
               {totalNetSalary.toLocaleString()}
             </div>
           </CardContent>
