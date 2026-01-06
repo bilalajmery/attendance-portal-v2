@@ -18,6 +18,7 @@ import {
 import {
   getPortalSettings,
   updatePortalSettings,
+  recomputeMonthlyAttendanceStatus,
 } from "../../../lib/firestore";
 import { toast } from "sonner";
 import {
@@ -27,10 +28,13 @@ import {
   Image,
   Shield,
   LogIn,
+  Database,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { getDoc, doc, setDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import { getSalaryMonthKey } from "../../../lib/salary";
 
 export const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -54,6 +58,7 @@ export const Settings: React.FC = () => {
   // Admin Profile State
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [fixingAttendance, setFixingAttendance] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -90,27 +95,27 @@ export const Settings: React.FC = () => {
         setDarkLogoUrl(settings.darkLogoUrl || settings.logoUrl || "");
         setPortalLightLogoUrl(
           settings.portalLightLogoUrl ||
-            settings.lightLogoUrl ||
-            settings.logoUrl ||
-            ""
+          settings.lightLogoUrl ||
+          settings.logoUrl ||
+          ""
         );
         setPortalDarkLogoUrl(
           settings.portalDarkLogoUrl ||
-            settings.darkLogoUrl ||
-            settings.logoUrl ||
-            ""
+          settings.darkLogoUrl ||
+          settings.logoUrl ||
+          ""
         );
         setLoginLightLogoUrl(
           settings.loginLightLogoUrl ||
-            settings.lightLogoUrl ||
-            settings.logoUrl ||
-            ""
+          settings.lightLogoUrl ||
+          settings.logoUrl ||
+          ""
         );
         setLoginDarkLogoUrl(
           settings.loginDarkLogoUrl ||
-            settings.darkLogoUrl ||
-            settings.logoUrl ||
-            ""
+          settings.darkLogoUrl ||
+          settings.logoUrl ||
+          ""
         );
         setSalaryStartDay(settings.salaryStartDay || 6);
         setOfficeStartTime(settings.officeStartTime || "10:00");
@@ -177,6 +182,36 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const handleFixAttendance = async () => {
+    if (!confirm("Are you sure you want to recompute attendance status for the current and previous months? This will update records based on the current 1-hour late rule.")) return;
+
+    try {
+      setFixingAttendance(true);
+
+      // Fix for last 3 months to be safe
+      const monthsToFix = [];
+      for (let i = 0; i < 3; i++) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        monthsToFix.push(getSalaryMonthKey(date, salaryStartDay));
+      }
+
+      let totalUpdated = 0;
+      for (const monthKey of monthsToFix) {
+        toast.info(`Fixing records for ${monthKey}...`);
+        const count = await recomputeMonthlyAttendanceStatus(monthKey);
+        totalUpdated += count;
+      }
+
+      toast.success(`Successfully updated ${totalUpdated} records across ${monthsToFix.length} months.`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to recompute attendance");
+    } finally {
+      setFixingAttendance(false);
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -191,7 +226,7 @@ export const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="general" className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:w-[600px]">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
             General
@@ -203,6 +238,10 @@ export const Settings: React.FC = () => {
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
+          </TabsTrigger>
+          <TabsTrigger value="maintenance" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            System
           </TabsTrigger>
         </TabsList>
 
@@ -478,6 +517,45 @@ export const Settings: React.FC = () => {
                   {saving ? "Updating..." : "Update Profile"}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Maintenance Tab */}
+        <TabsContent value="maintenance">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Maintenance</CardTitle>
+              <CardDescription>
+                Perform bulk operations and database cleanup.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+                <h3 className="text-lg font-medium text-amber-900 dark:text-amber-100 flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" /> Correct Attendance Status
+                </h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
+                  This tool will scan all attendance records for the last 3 months and re-evaluate the status (Present/Late/Half-Day) based on the current office timings and the new 1-hour late rule. Use this after changing salary logic or office timings.
+                </p>
+                <Button
+                  onClick={handleFixAttendance}
+                  disabled={fixingAttendance}
+                  variant="outline"
+                  className="mt-4 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                >
+                  {fixingAttendance ? "Processing..." : "Run Correction Now"}
+                </Button>
+              </div>
+
+              <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <Database className="h-4 w-4" /> Database Info
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  All attendance records are partitioned by salary month (e.g. attendance_2025_12).
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -29,10 +29,10 @@ import {
   getSalaryMonthKey,
   calculateDeductions,
   calculateNetSalary,
-  isLate,
+  getLateStatus,
   calculateEarlyLeaveHours,
-  getSalaryMonthDates,
   calculateOvertimeHours,
+  getSalaryMonthDates,
 } from "./salary";
 import { getAllSundaysInYear } from "./holidays";
 import { verifyNetworkAccess } from "./ipRestriction";
@@ -216,12 +216,12 @@ export const markAttendance = async (
     throw new Error("Attendance already marked for today");
   }
 
-  // Determine if late
+  // Determine if late or half-day
   const inTime = Timestamp.now();
-  const isLateMark =
-    status === "present" &&
-    isLate(inTime.toDate(), officeStartTime, lateBuffer);
-  const finalStatus: AttendanceStatus = isLateMark ? "late" : status;
+  const finalStatus: AttendanceStatus =
+    status === "present"
+      ? getLateStatus(inTime.toDate(), officeStartTime, lateBuffer)
+      : status;
 
   const recordData: Record<string, any> = {
     status: finalStatus,
@@ -233,7 +233,7 @@ export const markAttendance = async (
     recordData.imageUrl = imageUrl;
   }
 
-  if (status === "present" || finalStatus === "late") {
+  if (status === "present" || finalStatus === "late" || finalStatus === "half-day") {
     recordData.inTime = inTime;
   }
 
@@ -241,7 +241,7 @@ export const markAttendance = async (
     recordData.leaveReason = leaveReason;
   }
 
-  if (isLateMark) {
+  if (finalStatus === "late" || finalStatus === "half-day") {
     recordData.lateMinutes = calculateLateMinutes(
       inTime.toDate(),
       officeStartTime,
@@ -394,15 +394,13 @@ export const adminUpsertAttendance = async (
   } else {
     // Attendance mode
     if (data.inTime) {
-      if (isLate(data.inTime, officeStartTime, lateBuffer)) {
-        finalStatus = "late";
+      finalStatus = getLateStatus(data.inTime, officeStartTime, lateBuffer);
+      if (finalStatus === "late" || finalStatus === "half-day") {
         lateMinutes = calculateLateMinutes(
           data.inTime,
           officeStartTime,
           lateBuffer
         );
-      } else {
-        finalStatus = "present";
       }
     } else {
       finalStatus = "present";
@@ -442,7 +440,7 @@ export const adminUpsertAttendance = async (
     recordData.overtimeReason = deleteField();
   }
 
-  if (finalStatus === "late") {
+  if (finalStatus === "late" || finalStatus === "half-day") {
     recordData.lateMinutes = lateMinutes;
   } else if (data.mode === "attendance") {
     // If present (not late), remove lateMinutes
@@ -573,6 +571,7 @@ export const calculateMonthlySalary = async (
   let offDays = 0;
   let unmarkedDays = 0;
   let lateCount = 0;
+  let halfDayCount = 0;
   let earlyLeaveHours = 0;
 
   allDays.forEach((day) => {
@@ -599,6 +598,10 @@ export const calculateMonthlySalary = async (
           lateCount++;
           presentDays++; // Late is still present
           break;
+        case "half-day":
+          halfDayCount++;
+          presentDays++; // Half-day is still present
+          break;
       }
 
       if (record.earlyLeaveHours) {
@@ -620,7 +623,8 @@ export const calculateMonthlySalary = async (
     employee.monthlySalary,
     totalOffDaysForDeduction,
     lateCount,
-    earlyLeaveHours
+    earlyLeaveHours,
+    halfDayCount
   );
 
   const netSalary = calculateNetSalary(
@@ -639,9 +643,11 @@ export const calculateMonthlySalary = async (
     unmarkedDays,
     holidayDays: holidays.length,
     lateCount,
+    halfDayCount,
     earlyLeaveHours,
     offDeduction: deductions.offDeduction,
     lateDeduction: deductions.lateDeduction,
+    halfDayDeduction: deductions.halfDayDeduction,
     earlyLeaveDeduction: deductions.earlyLeaveDeduction,
     totalDeductions: deductions.totalDeductions,
     netSalary,
@@ -685,6 +691,7 @@ export const generateMonthlyReport = async (
       leaveDays: number;
       offDays: number;
       lateCount: number;
+      halfDayCount: number;
       earlyLeaveHours: number;
       unmarkedDays: number;
     }
@@ -697,6 +704,7 @@ export const generateMonthlyReport = async (
       leaveDays: 0,
       offDays: 0,
       lateCount: 0,
+      halfDayCount: 0,
       earlyLeaveHours: 0,
       unmarkedDays: 0,
     });
@@ -706,7 +714,7 @@ export const generateMonthlyReport = async (
   dailyRecords.forEach(({ dateStr, records }) => {
     // CRITICAL: Skip future dates for deduction calculation
     // If we are in the current month, we should NOT count absent/off for future days
-    if (dateStr > todayStr) return; 
+    if (dateStr > todayStr) return;
 
     const isHoliday = holidaysSet.has(dateStr);
 
@@ -723,6 +731,9 @@ export const generateMonthlyReport = async (
       } else if (record.status === "late") {
         stats.presentDays++;
         stats.lateCount++;
+      } else if (record.status === "half-day") {
+        stats.presentDays++;
+        stats.halfDayCount++;
       } else if (record.status === "leave") {
         stats.leaveDays++;
       } else if (record.status === "off") {
@@ -757,7 +768,8 @@ export const generateMonthlyReport = async (
       emp.monthlySalary,
       totalOffDaysForDeduction,
       stats.lateCount,
-      stats.earlyLeaveHours
+      stats.earlyLeaveHours,
+      stats.halfDayCount
     );
 
     const netSalary = calculateNetSalary(
@@ -776,9 +788,11 @@ export const generateMonthlyReport = async (
       unmarkedDays: stats.unmarkedDays,
       holidayDays: holidays.length,
       lateCount: stats.lateCount,
+      halfDayCount: stats.halfDayCount,
       earlyLeaveHours: stats.earlyLeaveHours,
       offDeduction: deductions.offDeduction,
       lateDeduction: deductions.lateDeduction,
+      halfDayDeduction: deductions.halfDayDeduction,
       earlyLeaveDeduction: deductions.earlyLeaveDeduction,
       totalDeductions: deductions.totalDeductions,
       netSalary,
@@ -797,7 +811,7 @@ export const addSalaryPayment = async (payment: Omit<SalaryPayment, 'id'>) => {
 
 export const getSalaryPayments = async (salaryMonthKey: string): Promise<SalaryPayment[]> => {
   const q = query(
-    collection(db, 'salary_payments'), 
+    collection(db, 'salary_payments'),
     where('salaryMonthKey', '==', salaryMonthKey)
   );
   const snapshot = await getDocs(q);
@@ -806,10 +820,45 @@ export const getSalaryPayments = async (salaryMonthKey: string): Promise<SalaryP
 
 export const getEmployeePayments = async (employeeUid: string): Promise<SalaryPayment[]> => {
   const q = query(
-    collection(db, 'salary_payments'), 
+    collection(db, 'salary_payments'),
     where('employeeUid', '==', employeeUid),
     orderBy('paidAt', 'desc')
   );
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SalaryPayment));
+};
+
+// ==================== MAINTENANCE OPERATIONS ====================
+
+export const recomputeMonthlyAttendanceStatus = async (salaryMonthKey: string) => {
+  const settings = await getPortalSettings();
+  const officeStartTime = settings?.officeStartTime || "10:00";
+  const lateBuffer = settings?.lateMarkAfterMinutes || 15;
+  const startDay = settings?.salaryStartDay || 6;
+
+  const { start, end } = getSalaryMonthDates(salaryMonthKey, startDay);
+  const days = eachDayOfInterval({ start, end });
+
+  let updatedCount = 0;
+
+  for (const day of days) {
+    const dateStr = format(day, "yyyy-MM-dd");
+    const recordsPath = `attendance_${salaryMonthKey}/${dateStr}/records`;
+    const recordsSnapshot = await getDocs(collection(db, recordsPath));
+
+    for (const recordDoc of recordsSnapshot.docs) {
+      const data = recordDoc.data() as AttendanceRecord;
+      if (data.inTime && (data.status === 'present' || data.status === 'late' || data.status === 'half-day')) {
+        const newStatus = getLateStatus(data.inTime.toDate(), officeStartTime, lateBuffer);
+        if (newStatus !== data.status) {
+          await updateDoc(recordDoc.ref, {
+            status: newStatus,
+            updatedAt: serverTimestamp()
+          });
+          updatedCount++;
+        }
+      }
+    }
+  }
+  return updatedCount;
 };

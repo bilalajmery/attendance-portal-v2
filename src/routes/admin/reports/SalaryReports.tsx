@@ -74,8 +74,10 @@ export const SalaryReports: React.FC = () => {
       "Unmarked",
       "Holidays",
       "Late",
+      "Half Day",
       "Off Deduction",
       "Late Deduction",
+      "Half Day Ded.",
       "Early Leave Ded.",
       "Total Deductions",
       "Net Salary",
@@ -96,8 +98,10 @@ export const SalaryReports: React.FC = () => {
           r.unmarkedDays,
           r.holidayDays,
           r.lateCount,
+          r.halfDayCount,
           r.offDeduction,
           r.lateDeduction,
+          r.halfDayDeduction,
           r.earlyLeaveDeduction,
           r.totalDeductions,
           r.netSalary,
@@ -258,8 +262,10 @@ export const SalaryReports: React.FC = () => {
                   <TableHead className="text-center">Unmarked</TableHead>
                   <TableHead className="text-center">Holidays</TableHead>
                   <TableHead className="text-center">Late</TableHead>
+                  <TableHead className="text-center">Half Day</TableHead>
                   <TableHead className="text-right">Off Deduction</TableHead>
                   <TableHead className="text-right">Late Deduction</TableHead>
+                  <TableHead className="text-right">Half Day Ded.</TableHead>
                   <TableHead className="text-right">Early Leave Ded.</TableHead>
                   <TableHead className="text-right">Total Deductions</TableHead>
                   <TableHead className="text-right">Net Salary</TableHead>
@@ -270,7 +276,7 @@ export const SalaryReports: React.FC = () => {
                 {reports.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={14}
+                      colSpan={17}
                       className="text-center text-muted-foreground"
                     >
                       No salary data available for this month
@@ -305,6 +311,9 @@ export const SalaryReports: React.FC = () => {
                       <TableCell className="text-center">
                         {report.lateCount}
                       </TableCell>
+                      <TableCell className="text-center">
+                        {report.halfDayCount}
+                      </TableCell>
                       <TableCell className="text-right text-red-600">
                         {currencySymbol}
                         {report.offDeduction.toLocaleString()}
@@ -312,6 +321,10 @@ export const SalaryReports: React.FC = () => {
                       <TableCell className="text-right text-red-600">
                         {currencySymbol}
                         {report.lateDeduction.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right text-red-600">
+                        {currencySymbol}
+                        {report.halfDayDeduction.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right text-red-600">
                         {currencySymbol}
