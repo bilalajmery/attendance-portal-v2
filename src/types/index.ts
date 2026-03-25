@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type AttendanceStatus = 'present' | 'leave' | 'off' | 'holiday' | 'late';
+export type AttendanceStatus = 'present' | 'leave' | 'off' | 'holiday' | 'late' | 'half-day';
 
 export interface Admin {
   uid: string;
@@ -59,9 +59,11 @@ export interface SalaryReport {
   unmarkedDays: number;
   holidayDays: number;
   lateCount: number;
+  halfDayCount: number;
   earlyLeaveHours: number;
   offDeduction: number;
   lateDeduction: number;
+  halfDayDeduction: number;
   earlyLeaveDeduction: number;
   totalDeductions: number;
   netSalary: number;
@@ -71,6 +73,7 @@ export interface AttendanceStats {
   leaveDays: number;
   offDays: number;
   lateDays: number;
+  halfDayDays: number;
   earlyLeaveHours: number;
   estimatedNetSalary: number;
 }

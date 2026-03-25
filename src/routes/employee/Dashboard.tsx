@@ -200,6 +200,7 @@ export const EmployeeDashboard: React.FC = () => {
       let leaveDays = 0;
       let offDays = 0;
       let lateDays = 0;
+      let halfDayDays = 0;
       let earlyLeaveHours = 0;
       let overtimeHours = 0;
 
@@ -222,6 +223,10 @@ export const EmployeeDashboard: React.FC = () => {
             lateDays++;
             presentDays++; // Late is still present
             break;
+          case "half-day":
+            halfDayDays++;
+            presentDays++; // Half-day is still present
+            break;
         }
         if (record.earlyLeaveHours) {
           earlyLeaveHours += record.earlyLeaveHours;
@@ -235,7 +240,8 @@ export const EmployeeDashboard: React.FC = () => {
         employeeProfile?.monthlySalary || 0,
         offDays,
         lateDays,
-        earlyLeaveHours
+        earlyLeaveHours,
+        halfDayDays
       );
 
       const netSalary = calculateNetSalary(
@@ -248,6 +254,7 @@ export const EmployeeDashboard: React.FC = () => {
         leaveDays,
         offDays,
         lateDays,
+        halfDayDays,
         earlyLeaveHours,
         estimatedNetSalary: netSalary,
       });
@@ -448,6 +455,11 @@ export const EmployeeDashboard: React.FC = () => {
           "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100/80 dark:hover:bg-yellow-900/70",
         label: "Late",
       },
+      "half-day": {
+        className:
+          "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 hover:bg-orange-100/80 dark:hover:bg-orange-900/70",
+        label: "Half Day",
+      },
       holiday: {
         className:
           "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-100/80 dark:hover:bg-purple-900/70",
@@ -567,13 +579,12 @@ export const EmployeeDashboard: React.FC = () => {
         <div className="flex items-center gap-3">
           {/* Network Status Badge */}
           <div
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-              checkingNetwork
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${checkingNetwork
                 ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 : isAllowedNetwork
-                ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
-                : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
-            }`}
+                  ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+                  : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+              }`}
           >
             {checkingNetwork ? (
               <>
@@ -708,21 +719,20 @@ export const EmployeeDashboard: React.FC = () => {
                     {todayRecord.status === "off"
                       ? "Today is your Off"
                       : todayRecord.status === "leave"
-                      ? "On Leave Today"
-                      : todayRecord.outTime
-                      ? "You're all done for today!"
-                      : "You're checked in!"}
+                        ? "On Leave Today"
+                        : todayRecord.outTime
+                          ? "You're all done for today!"
+                          : "You're checked in!"}
                   </h3>
                   <p className="text-muted-foreground dark:text-slate-400">
                     {todayRecord.status === "off"
                       ? "Enjoy your day off! Come back tomorrow."
                       : todayRecord.status === "leave"
-                      ? `Reason: ${
-                          todayRecord.leaveReason || "No reason provided"
+                        ? `Reason: ${todayRecord.leaveReason || "No reason provided"
                         }`
-                      : todayRecord.outTime
-                      ? `Out time marked at ${formatTime(todayRecord.outTime)}`
-                      : `In time marked at ${formatTime(todayRecord.inTime)}`}
+                        : todayRecord.outTime
+                          ? `Out time marked at ${formatTime(todayRecord.outTime)}`
+                          : `In time marked at ${formatTime(todayRecord.inTime)}`}
                   </p>
                 </div>
 
@@ -793,6 +803,20 @@ export const EmployeeDashboard: React.FC = () => {
                 </div>
                 <span className="text-xl font-bold text-blue-700 dark:text-blue-400">
                   {stats?.leaveDays || 0}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg border border-orange-100 dark:border-orange-800">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-orange-200 dark:bg-orange-800 flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
+                  </div>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    Half Days
+                  </span>
+                </div>
+                <span className="text-xl font-bold text-orange-700 dark:text-orange-400">
+                  {stats?.halfDayDays || 0}
                 </span>
               </div>
 

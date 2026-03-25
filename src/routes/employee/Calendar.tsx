@@ -93,7 +93,7 @@ export const EmployeeCalendar: React.FC = () => {
     const opacity = "opacity-100";
 
     if (holidays.has(dateStr)) {
-      return `${baseStyle} ${opacity} bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/50`;
+      return `${baseStyle} ${opacity} bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50`;
     }
 
     const record = records.get(dateStr);
@@ -108,6 +108,8 @@ export const EmployeeCalendar: React.FC = () => {
       case "off":
         return `${baseStyle} ${opacity} bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50`;
       case "late":
+        return `${baseStyle} ${opacity} bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/50`;
+      case "half-day":
         return `${baseStyle} ${opacity} bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/50`;
       default:
         return `${baseStyle} ${opacity} bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700`;
@@ -123,9 +125,11 @@ export const EmployeeCalendar: React.FC = () => {
       case "off":
         return <Badge variant="destructive">Off</Badge>;
       case "late":
-        return <Badge className="bg-orange-500">Late</Badge>;
+        return <Badge className="bg-yellow-500 text-black">Late</Badge>;
+      case "half-day":
+        return <Badge className="bg-orange-500">Half Day</Badge>;
       case "holiday":
-        return <Badge className="bg-yellow-500 text-black">Holiday</Badge>;
+        return <Badge className="bg-indigo-500">Holiday</Badge>;
       default:
         return null;
     }
@@ -223,15 +227,19 @@ export const EmployeeCalendar: React.FC = () => {
               <span>Leave</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-800 rounded" />
+              <div className="w-4 h-4 bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-800 rounded" />
               <span>Late</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-800 rounded" />
+              <span>Half Day</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded" />
               <span>Off</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-200 dark:border-yellow-800 rounded" />
+              <div className="w-4 h-4 bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 rounded" />
               <span>Holiday</span>
             </div>
           </div>
@@ -267,7 +275,7 @@ export const EmployeeCalendar: React.FC = () => {
                   </span>
 
                   {holiday && (
-                    <span className="text-xs text-yellow-700 dark:text-yellow-400 font-medium truncate w-full text-left">
+                    <span className="text-xs text-indigo-700 dark:text-indigo-400 font-medium truncate w-full text-left">
                       {holiday.reason || "Holiday"}
                     </span>
                   )}
@@ -276,17 +284,18 @@ export const EmployeeCalendar: React.FC = () => {
                     <div className="flex flex-col items-start w-full gap-1">
                       <span
                         className={`text-xs font-medium px-1.5 py-0.5 rounded-full w-fit
-                        ${
-                          record.status === "present"
+                        ${record.status === "present"
                             ? "bg-green-200 text-green-800"
                             : record.status === "leave"
-                            ? "bg-emerald-200 text-emerald-800"
-                            : record.status === "late"
-                            ? "bg-orange-200 text-orange-800"
-                            : record.status === "off"
-                            ? "bg-red-200 text-red-800"
-                            : ""
-                        }
+                              ? "bg-emerald-200 text-emerald-800"
+                              : record.status === "late"
+                                ? "bg-yellow-200 text-yellow-800"
+                                : record.status === "half-day"
+                                  ? "bg-orange-200 text-orange-800"
+                                  : record.status === "off"
+                                    ? "bg-red-200 text-red-800"
+                                    : ""
+                          }
                       `}
                       >
                         {record.status.charAt(0).toUpperCase() +
@@ -353,36 +362,37 @@ export const EmployeeCalendar: React.FC = () => {
                 <div className="space-y-4">
                   {/* Timings */}
                   {(selectedDateDetails.record.status === "present" ||
-                    selectedDateDetails.record.status === "late") && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-1">
-                        <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400 text-xs uppercase font-bold">
-                          <Clock className="h-3 w-3" /> In Time
-                        </div>
-                        <div className="font-mono font-medium dark:text-white">
-                          {selectedDateDetails.record.inTime
-                            ? format(
+                    selectedDateDetails.record.status === "late" ||
+                    selectedDateDetails.record.status === "half-day") && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-1">
+                          <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400 text-xs uppercase font-bold">
+                            <Clock className="h-3 w-3" /> In Time
+                          </div>
+                          <div className="font-mono font-medium dark:text-white">
+                            {selectedDateDetails.record.inTime
+                              ? format(
                                 selectedDateDetails.record.inTime.toDate(),
                                 "hh:mm a"
                               )
-                            : "--:--"}
+                              : "--:--"}
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-1">
-                        <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400 text-xs uppercase font-bold">
-                          <Clock className="h-3 w-3" /> Out Time
-                        </div>
-                        <div className="font-mono font-medium dark:text-white">
-                          {selectedDateDetails.record.outTime
-                            ? format(
+                        <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-1">
+                          <div className="flex items-center gap-2 text-muted-foreground dark:text-slate-400 text-xs uppercase font-bold">
+                            <Clock className="h-3 w-3" /> Out Time
+                          </div>
+                          <div className="font-mono font-medium dark:text-white">
+                            {selectedDateDetails.record.outTime
+                              ? format(
                                 selectedDateDetails.record.outTime.toDate(),
                                 "hh:mm a"
                               )
-                            : "--:--"}
+                              : "--:--"}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Overtime Details */}
                   {selectedDateDetails.record.overtimeHours &&
