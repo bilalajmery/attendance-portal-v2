@@ -99,9 +99,12 @@ A production-ready Attendance Management System with separate Employee and Admin
    VITE_FIREBASE_APP_ID=your_app_id
    ```
 
-5. **Add first admin manually** (See SETUP_FIRST_ADMIN.md)
+5. **Add first admin manually**
+   - In Firebase Console -> Firestore Database, create a document in `admins` with your Google UID.
+   - Example document id: your uid, fields: `email`, `name`, `role: "admin"`.
 
-6. **Deploy Firestore Security Rules** (See FIRESTORE_RULES.md)
+6. **Deploy Firestore Security Rules**
+   - Configure and publish Firestore rules from Firebase Console -> Firestore Database -> Rules.
 
 ## Running Locally
 
@@ -172,7 +175,7 @@ src/
 │   ├── auth.ts
 │   ├── firestore.ts
 │   ├── salary.ts
-│   ├── holidays.ts
+│   ├── weekHolidays.ts
 │   └── utils.ts
 ├── routes/
 │   ├── shared/

@@ -1,4 +1,24 @@
-import { startOfWeek, endOfWeek, format, isWithinInterval, isSunday, isValid } from "date-fns";
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfDay,
+  format,
+  isWithinInterval,
+  isSunday,
+  isValid,
+} from "date-fns";
+
+// Parse `yyyy-MM-dd` into a *local* Date to avoid timezone shifting issues
+// (e.g. `new Date('2026-03-23')` can be treated as UTC by JS).
+const parseLocalYyyyMmDd = (dateStr: string): Date | null => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!match) return new Date(dateStr);
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1; // 0-based
+  const day = Number(match[3]);
+  return new Date(year, monthIndex, day);
+};
 
 /**
  * Get the start and end of the current week (Monday to Sunday)
@@ -29,12 +49,14 @@ export const isInCurrentWeek = (date: Date | string): boolean => {
 export const getCurrentWeekHolidays = <T extends { date: string; reason?: string }>(holidays: T[]): T[] => {
   if (!Array.isArray(holidays)) return [];
 
+  const today = startOfDay(new Date());
+
   return holidays.filter((holiday) => {
     if (!holiday.date) return false;
-    const holidayDate = new Date(holiday.date);
+    const holidayDate = parseLocalYyyyMmDd(holiday.date);
     
     // Check if valid date
-    if (!isValid(holidayDate)) return false;
+    if (!holidayDate || !isValid(holidayDate)) return false;
 
     // Check if it's in current week
     if (!isInCurrentWeek(holidayDate)) {
@@ -45,8 +67,18 @@ export const getCurrentWeekHolidays = <T extends { date: string; reason?: string
     if (isSunday(holidayDate)) {
       return false;
     }
+
+    // "Upcoming" should not include past days within the current week.
+    if (holidayDate < today) {
+      return false;
+    }
     
     return true;
+  }).sort((a, b) => {
+    const ad = parseLocalYyyyMmDd(a.date);
+    const bd = parseLocalYyyyMmDd(b.date);
+    if (!ad || !bd) return 0;
+    return ad.getTime() - bd.getTime();
   });
 };
 
