@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Authentication & Authorization Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isAttendanceCollection(collectionName) {
+      return collectionName.matches('^attendance_[0-9]{4}_[0-9]{2}$');
+    }
+
+    // ===============================================================
+    // 1. Settings Collection
+    // ===============================================================
+    // Public read ONLY for branding/currency on the login screen.
+    // Writes restricted exclusively to authenticated administrators.
+    match /settings/portal {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ===============================================================
+    // 2. Admins Collection
+    // ===============================================================
+    // - Authenticated users can read their own admin document for role resolution.
+    // - Authenticated administrators can list and read all admin documents.
+    // - Only verified administrators can create, update, or delete admin documents.
+    // - Self-creation or privilege escalation by non-admins is STRICTLY BLOCKED.
+    match /admins/{adminId} {
+      allow get: if isAuthenticated() && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ===============================================================
+    // 3. Employees Collection (Admin-Only in this Phase)
+    // ===============================================================
+    // - Read and Write restricted exclusively to authenticated administrators.
+    // - All employee self-service access and UID migration disabled.
+    match /employees/{employeeId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ===============================================================
+    // 4. Dynamic Attendance Collections (Admin-Only in this Phase)
+    // ===============================================================
+    // - Parent date document: Read & Write restricted to administrators.
+    // - Records subcollection: Read & Write restricted to administrators.
+    // - All employee check-in and checkout punches disabled.
+    match /{attendanceCollection}/{date} {
+      allow read, write: if isAttendanceCollection(attendanceCollection) && isAdmin();
+
+      match /records/{employeeId} {
+        allow read, write: if isAttendanceCollection(attendanceCollection) && isAdmin();
+      }
+    }
+
+    // ===============================================================
+    // 5. Holidays Collection (Admin-Only in this Phase)
+    // ===============================================================
+    // - Read & Write restricted exclusively to authenticated administrators.
+    match /holidays/{holidayId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ===============================================================
+    // 6. Salary Payments Collection (Admin-Only in this Phase)
+    // ===============================================================
+    // - Read & Write restricted exclusively to authenticated administrators.
+    match /salary_payments/{paymentId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ===============================================================
+    // Default Deny-All for All Unmatched Collections
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

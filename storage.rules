@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Attendance Photos: stored under attendance_images/{userId}/{timestamp}.jpg
+    match /attendance_images/{userId}/{allPaths=**} {
+      // Authenticated users can read photos
+      allow read: if isAuthenticated();
+
+      // Employees can upload only to their own folder, max 5MB, image content type only
+      allow write: if isAuthenticated() &&
+                     request.auth.uid == userId &&
+                     request.resource.size < 5 * 1024 * 1024 &&
+                     request.resource.contentType.matches('image/.*');
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
